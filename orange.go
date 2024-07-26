@@ -92,6 +92,7 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	MustSetup(commandLog)
 	MustSetup(auth)
 	MustSetup(content)
+	MustSetup(contentState)
 
 	return app.Mount(auth).Mount(content), starters
 }

@@ -21,9 +21,9 @@ func (self *PersistentContentState) Setup() error {
 	}
 	defer db.Close()
 	schema := []string{
-		"CREATE TABLE IF NOT EXISTS submissions (item_id TEXT, submitter TEXT, url TEXT, title TEXT, submitted_at TIMESTAMP);",
-		"CREATE TABLE IF NOT EXISTS submission_previews (item_id TEXT, title TEXT, image_url TEXT, description TEXT, generated_at TIMESTAMP);",
-		"CREATE TABLE IF NOT EXISTS submission_votes (item_id TEXT, voter TEXT, voted_at TIMESTAMP);",
+		"CREATE TABLE IF NOT EXISTS submissions (item_id TEXT PRIMARY KEY, submitter TEXT, url TEXT, title TEXT, submitted_at TIMESTAMP);",
+		"CREATE TABLE IF NOT EXISTS submission_previews (item_id TEXT PRIMARY KEY, title TEXT, image_url TEXT, description TEXT, generated_at TIMESTAMP);",
+		"CREATE TABLE IF NOT EXISTS submission_votes (item_id TEXT, voter TEXT, voted_at TIMESTAMP, PRIMARY KEY (item_id, voter));",
 		"CREATE INDEX IF NOT EXISTS submission_voters ON submission_votes (item_id, voter);",
 	}
 	tx, err := db.Begin()
@@ -75,20 +75,22 @@ func (self *PersistentContentState) TopNSubmissions(n int) ([]*Submission, error
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	defer db.Close()
-	rows, err := db.Query(`SELECT submitter, url, title, submitted_at FROM submissions ORDER BY submitted_at DESC LIMIT ?`, n)
+	rows, err := db.Query(`SELECT item_id, submitter, url, title, submitted_at FROM submissions ORDER BY submitted_at DESC LIMIT ?`, n)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query submissions: %w", err)
 	}
 	defer rows.Close()
-	submissions := make([]*Submission, n)
+	submissions := make([]*Submission, 0, n)
+
 	for rows.Next() {
 		submission := &Submission{}
-		if err := rows.Scan(&submission.Submitter, &submission.Url, &submission.Title, &submission.SubmittedAt); err != nil {
+		if err := rows.Scan(&submission.ItemID, &submission.Submitter, &submission.Url, &submission.Title, &submission.SubmittedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan submission: %w", err)
 		}
 		preview := &SubmissionPreview{
 			ItemID: submission.ItemID,
 		}
+
 		if err := db.QueryRow(
 			"select title, image_url, description, generated_at from submission_previews where item_id = ?",
 			submission.ItemID,
@@ -98,6 +100,7 @@ func (self *PersistentContentState) TopNSubmissions(n int) ([]*Submission, error
 
 		submissions = append(submissions, submission)
 	}
+
 	return submissions, nil
 }
 
@@ -108,9 +111,11 @@ func (self *PersistentContentState) RecordVote(vote *Vote) error {
 	}
 	defer db.Close()
 	_, err = db.Query(`
-    INSERT INTO submission_votes (item_id, voter_id, voted_at) values (?, ?, ?) 
-    WHERE (select count(*) from submission_votes WHERE item_id = ? and voter_id = ?) = 0
-  `, vote.For, vote.By, vote.At, vote.For, vote.By)
+    INSERT OR REPLACE INTO submission_votes (item_id, voter, voted_at) 
+          values (?, ?, ?) 
+    ON CONFLICT (item_id, voter)
+    DO NOTHING
+  `, vote.For, vote.By, vote.At)
 	if err != nil {
 		return fmt.Errorf("failed to insert vote: %w", err)
 	}
@@ -132,7 +137,7 @@ func (self *PersistentContentState) HasVotedFor(user string, itemIDs []string) (
 	ids := strings.Join(idList, ",")
 
 	rows, err := db.Query(fmt.Sprintf(`
-  SELECT item_id FROM submission_votes WHERE voter_id = ? AND item_id IN (%s)
+  SELECT item_id FROM submission_votes WHERE voter = ? AND item_id IN (%s)
   `, ids), user)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get voting state: %w", err)
