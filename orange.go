@@ -38,6 +38,12 @@ func DefaultPlatformConfig() *PlatformConfig {
 		CommandLog:   parseURL("file:///commands.db", "CommandLog"),
 	}
 }
+
+func NewPlatformConfigForTest() *PlatformConfig {
+	config := DefaultPlatformConfig()
+	config.CommandLog = parseURL("memory://", "CommandLog")
+	return config
+}
 func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 	config := DefaultPlatformConfig()
 	fields := []**url.URL{&config.ContentStore, &config.AuthStore, &config.CommandLog}
@@ -55,6 +61,8 @@ func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 func (c *PlatformConfig) NewCommandLog() CommandLog {
 	if c.CommandLog.Scheme == "file" {
 		return NewFileCommandLog(toFilePath(c.CommandLog), DefaultSerializer)
+	} else if c.CommandLog.Scheme == "memory" {
+		return NewInMemoryCommandLog()
 	} else {
 		panic("Unsupported command log URL " + c.CommandLog.String())
 	}
