@@ -75,6 +75,7 @@ func InputWithLabel(name, label, kind string, state *FormState, attrs ...g.Node)
 			Input(append([]g.Node{
 				ID(name),
 				Name(name),
+				Type(kind),
 				state.ValueFor(name),
 				c.Classes{
 					classes: !state.HasErrorFor(name),

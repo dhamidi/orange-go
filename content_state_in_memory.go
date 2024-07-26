@@ -3,7 +3,8 @@ package main
 import "slices"
 
 type InMemoryContentState struct {
-	Submissions []*Submission
+	Submissions   []*Submission
+	VotesByItemID map[string][]string
 }
 
 func (self *InMemoryContentState) PutSubmissionPreview(preview *SubmissionPreview) error {
@@ -18,7 +19,8 @@ func (self *InMemoryContentState) PutSubmissionPreview(preview *SubmissionPrevie
 
 func NewInMemoryContentState() *InMemoryContentState {
 	return &InMemoryContentState{
-		Submissions: make([]*Submission, 0),
+		Submissions:   make([]*Submission, 0),
+		VotesByItemID: map[string][]string{},
 	}
 }
 
@@ -40,5 +42,36 @@ func (self *InMemoryContentState) TopNSubmissions(n int) ([]*Submission, error) 
 	if n > len(self.Submissions) {
 		n = len(self.Submissions)
 	}
-	return self.Submissions[:n], nil
+	topN := self.Submissions[:n]
+	for _, s := range topN {
+		s.VoteCount = len(self.VotesByItemID[s.ItemID])
+	}
+	return topN, nil
+}
+
+func (self *InMemoryContentState) RecordVote(vote *Vote) error {
+	voters, ok := self.VotesByItemID[vote.For]
+	if !ok {
+		voters = []string{}
+	}
+
+	if slices.Contains(voters, vote.By) {
+		return nil
+	}
+
+	voters = append(voters, vote.By)
+	self.VotesByItemID[vote.For] = voters
+	return nil
+}
+
+func (self *InMemoryContentState) HasVotedFor(user string, itemIDs []string) ([]bool, error) {
+	result := make([]bool, len(itemIDs))
+	for i, itemID := range itemIDs {
+		voters, ok := self.VotesByItemID[itemID]
+		if !ok {
+			continue
+		}
+		result[i] = slices.Contains(voters, user)
+	}
+	return result, nil
 }

@@ -78,7 +78,7 @@ func (c *PlatformConfig) NewAuthState() AuthState {
 	}
 }
 
-func HackerNews(config *PlatformConfig) *App {
+func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	commandLog := config.NewCommandLog()
 	contentState := config.NewContentState()
 	content := NewContent(contentState)
@@ -87,11 +87,11 @@ func HackerNews(config *PlatformConfig) *App {
 	app := NewApp(commandLog)
 
 	previewGenerator := NewPreviewGenerator(app, commandLog, log.Default())
-	previewGenerator.Start()
+	starters := []Starter{previewGenerator}
 
 	MustSetup(commandLog)
 	MustSetup(auth)
 	MustSetup(content)
 
-	return app.Mount(auth).Mount(content)
+	return app.Mount(auth).Mount(content), starters
 }

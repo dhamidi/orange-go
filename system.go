@@ -6,6 +6,10 @@ import (
 	"iter"
 )
 
+type Starter interface {
+	Start() (stop func())
+}
+
 type Setupper interface {
 	Setup() error
 }

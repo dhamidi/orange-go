@@ -23,6 +23,8 @@ type Submission struct {
 	SubmittedAt time.Time
 	Url         string
 	Title       string
+	VoteCount   int
+	CanVote     bool
 }
 
 type User struct {
@@ -32,6 +34,14 @@ type User struct {
 type PageData struct {
 	CurrentUser *User
 	FormErrors  map[string]string
+}
+
+func (p *PageData) Username() *string {
+	if p.CurrentUser != nil {
+		return &p.CurrentUser.Username
+	}
+
+	return nil
 }
 
 func (p *PageData) HasFormErrors() bool {
@@ -64,13 +74,17 @@ func SubmissionList(submissions []*Submission) g.Node {
 				g.Iff(s.ImageURL != nil, func() g.Node {
 					return Img(Src(*s.ImageURL), Alt(s.Title), Class("w-8 h-8"))
 				}),
+				g.Iff(s.ImageURL == nil, func() g.Node {
+					return Div(Class("w-8 h-8"))
+				}),
 				Div(
 					P(Class("prose"),
 						A(Href(s.Url), g.Text(s.Title)),
 						Span(Class("text-sm ml-1 text-gray-400"),
 							g.Textf("(%s)", s.Url))),
-					P(Class("prose text-xs"),
-						g.Textf("%d points by %s | ", 0, s.Submitter),
+					Div(Class("prose text-xs"),
+						g.Textf("%d points by %s | ", s.VoteCount, s.Submitter),
+						g.If(s.CanVote, UpvoteButton(s.ItemID)),
 						TimeLabel(s.SubmittedAt)),
 				))
 		})))

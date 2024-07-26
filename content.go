@@ -9,15 +9,19 @@ type ContentState interface {
 	PutSubmissionPreview(preview *SubmissionPreview) error
 	PutSubmission(submission *Submission) error
 	TopNSubmissions(n int) ([]*Submission, error)
+	RecordVote(vote *Vote) error
+	HasVotedFor(user string, itemIDs []string) ([]bool, error)
 }
 
 type Submission struct {
-	ItemID      string
-	Submitter   string
-	Url         string
-	Title       string
-	SubmittedAt time.Time
-	Preview     *SubmissionPreview
+	ItemID         string
+	Submitter      string
+	Url            string
+	Title          string
+	SubmittedAt    time.Time
+	Preview        *SubmissionPreview
+	VoteCount      int
+	ViewerHasVoted bool
 }
 
 type SubmissionPreview struct {
@@ -26,6 +30,12 @@ type SubmissionPreview struct {
 	Title       *string
 	Description *string
 	ImageURL    *string
+}
+
+type Vote struct {
+	By  string
+	For string
+	At  time.Time
 }
 
 type Content struct {
@@ -46,6 +56,8 @@ func (self *Content) HandleCommand(cmd Command) error {
 		return self.handlePostLink(cmd)
 	case *SetSubmissionPreview:
 		return self.handleSetSubmissionPreview(cmd)
+	case *UpvoteSubmission:
+		return self.handleUpvoteSubmission(cmd)
 	}
 	return ErrCommandNotAccepted
 }

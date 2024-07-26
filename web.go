@@ -34,6 +34,7 @@ func NewWebApp(app *App) *WebApp {
 
 func (web *WebApp) registerRoutes() {
 	routes := web.mux
+	routes.HandleFunc("/upvote", web.DoUpvote)
 	routes.HandleFunc("/submit", web.PageSubmit)
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
@@ -55,6 +56,36 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}
 	}
 	return pageData
+}
+
+func (web *WebApp) DoUpvote(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		http.Redirect(w, req, "/", http.StatusSeeOther)
+		return
+	}
+	currentUser := web.CurrentUser(req)
+	itemID := req.FormValue("item_id")
+	if currentUser == nil {
+		pages.UpvoteButton(itemID).Render(w)
+		return
+	}
+	cmd := &UpvoteSubmission{
+		Voter:   currentUser.Username,
+		VotedAt: web.CurrentTime(),
+		ItemID:  itemID,
+	}
+	err := web.app.HandleCommand(cmd)
+	if err == ErrAlreadyVoted {
+		pages.VotedIcon().Render(w)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	pages.VotedIcon().Render(w)
+	return
 }
 
 func (web *WebApp) DoLogOut(w http.ResponseWriter, req *http.Request) {
@@ -166,7 +197,8 @@ func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 }
 
 func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
-	q := NewFrontpageQuery()
+	pageData := web.PageData(req)
+	q := NewFrontpageQuery(pageData.Username())
 	if err := web.app.HandleQuery(q); err != nil {
 		fmt.Printf("Failed to load frontpage: %s\n", err)
 		http.Error(w, "failed to load front page", http.StatusInternalServerError)
@@ -191,6 +223,8 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			Url:         submission.Url,
 			SubmittedAt: submission.SubmittedAt,
 			Submitter:   submission.Submitter,
+			VoteCount:   submission.VoteCount,
+			CanVote:     !submission.ViewerHasVoted,
 		})
 	}
 	if req.Header.Get("HX-Request") != "" {

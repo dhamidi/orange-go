@@ -75,6 +75,31 @@ func list(log CommandLog) {
 	}
 }
 
+func upvote(app *App, params []string) {
+	if len(params) < 2 {
+		fmt.Printf("usage: upvote <session-id> <item-id>\n")
+		return
+	}
+	sessionID, itemID := params[0], params[1]
+	q := NewFindSessionQuery(sessionID)
+	if err := app.HandleQuery(q); err != nil {
+		fmt.Printf("failed to find session %q: %s\n", sessionID, err)
+		return
+	}
+	if q.Session == nil {
+		fmt.Printf("You are not logged in\n")
+		return
+	}
+	submit := &UpvoteSubmission{
+		ItemID:  itemID,
+		Voter:   q.Session.Username,
+		VotedAt: time.Now(),
+	}
+	if err := app.HandleCommand(submit); err != nil {
+		fmt.Printf("failed to upvote: %s\n", err)
+	}
+}
+
 func submit(app *App, params []string) {
 	if len(params) < 3 {
 		fmt.Printf("usage: submit <session-id> <title> <url>\n")
@@ -104,7 +129,7 @@ func submit(app *App, params []string) {
 
 func main() {
 	config := NewPlatformConfigFromEnv(os.Getenv)
-	app := HackerNews(config)
+	app, starters := HackerNews(config)
 	if err := app.Replay(); err != nil {
 		fmt.Printf("failed to replay commands: %s\n", err)
 		os.Exit(1)
@@ -121,6 +146,8 @@ func main() {
 		login(app, os.Args[2:])
 	case "submit":
 		submit(app, os.Args[2:])
+	case "upvote":
+		upvote(app, os.Args[2:])
 	case "find-session":
 		sessionID := ""
 		if len(os.Args) > 2 {
@@ -134,6 +161,9 @@ func main() {
 		conninfo := ":8080"
 		if len(os.Args) > 2 {
 			conninfo = os.Args[2]
+		}
+		for _, starter := range starters {
+			starter.Start()
 		}
 		fmt.Printf("%s\n", http.ListenAndServe(conninfo, web))
 	default:
