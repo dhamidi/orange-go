@@ -79,6 +79,8 @@ func (app *App) HandleCommand(message Command) error {
 		return fmt.Errorf("failed to append command: %w", err)
 	}
 
+	app.version += 1
+
 	return nil
 }
 
