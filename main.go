@@ -91,6 +91,7 @@ func submit(app *App, params []string) {
 		return
 	}
 	submit := &PostLink{
+		ItemID:      uuid.NewString(),
 		Submitter:   q.Session.Username,
 		Title:       title,
 		Url:         url,

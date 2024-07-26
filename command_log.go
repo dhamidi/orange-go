@@ -90,7 +90,7 @@ func (f *FileCommandLog) After(ID int) (iter.Seq[*PersistedCommand], error) {
 
 			cmd := new(Command)
 			if err := f.serializer.Decode(message, cmd); err != nil {
-				panic(fmt.Errorf("failed to decode command: %w", err))
+				panic(fmt.Errorf("failed to decode command: %w (raw: %s)", err, message))
 			}
 			if shouldContinue := yield(&PersistedCommand{ID: id, Message: *cmd}); shouldContinue == false {
 				break

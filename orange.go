@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 )
 
@@ -85,6 +86,10 @@ func HackerNews(config *PlatformConfig) *App {
 	auth := NewAuth(authState)
 	app := NewApp(commandLog)
 
+	previewGenerator := NewPreviewGenerator(app, commandLog, log.Default())
+	previewGenerator.Start()
+
+	MustSetup(commandLog)
 	MustSetup(auth)
 	MustSetup(content)
 

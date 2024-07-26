@@ -99,6 +99,7 @@ type CommandLog interface {
 	After(id int) (iter.Seq[*PersistedCommand], error)
 }
 
+// NullCommand log implements an empty log that does not store any messages nor return any.
 type NullCommandLog struct{}
 
 func (l *NullCommandLog) Append(command Command) error { return nil }
