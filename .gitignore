@@ -1,2 +1,5 @@
 /orange
+/orange-*
 /*.db
+/*.db-wal
+/*.db-shm
