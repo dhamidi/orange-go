@@ -43,6 +43,7 @@ func (web *WebApp) registerRoutes() {
 func (web *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	fmt.Printf("%s %s %s\n", web.CurrentTime().UTC().Format(time.StampMilli), req.Method, req.URL.Path)
 	web.app.Replay()
+	w.Header().Set("X-T", web.CurrentTime().Format(time.RFC3339))
 	web.mux.ServeHTTP(w, req)
 }
 

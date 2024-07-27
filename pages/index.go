@@ -52,7 +52,8 @@ func SubmissionList(submissions []*Submission) g.Node {
 	counter := 0
 	return Container(
 		hx.Get("/"),
-		hx.Trigger("load delay:10s"),
+		hx.Trigger("every 1s"),
+		hx.Target("body"),
 		hx.Swap("outerHTML"),
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
@@ -150,8 +151,9 @@ func Prose(children ...g.Node) g.Node {
 }
 
 func PageFooter() g.Node {
-	return Footer(Class("prose prose-sm prose-indigo"),
-		P(
+	return Footer(Class("block"),
+		P(Class("prose prose-sm prose-indigo text-center"),
+			ID("rendered-at"),
 			// We can use string interpolation directly, like fmt.Sprintf.
 			g.Textf("Rendered %v. ", time.Now().Format(time.RFC3339)),
 		),
