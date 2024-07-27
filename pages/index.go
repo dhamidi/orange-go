@@ -33,7 +33,7 @@ type User struct {
 
 type PageData struct {
 	CurrentUser *User
-	FormErrors  map[string]string
+	FormState   *FormState
 }
 
 func (p *PageData) Username() *string {
@@ -44,18 +44,6 @@ func (p *PageData) Username() *string {
 	return nil
 }
 
-func (p *PageData) HasFormErrors() bool {
-	return len(p.FormErrors) > 0
-}
-
-func (p *PageData) AddFormError(field, message string) {
-	if p.FormErrors == nil {
-		p.FormErrors = map[string]string{}
-	}
-
-	p.FormErrors[field] = message
-}
-
 func IndexPage(path string, submissions []*Submission, context *PageData) g.Node {
 	return Page("The Orange Website", path, SubmissionList(submissions), context)
 }
@@ -64,7 +52,7 @@ func SubmissionList(submissions []*Submission) g.Node {
 	counter := 0
 	return Container(
 		hx.Get("/"),
-		hx.Trigger("load delay:1s"),
+		hx.Trigger("load delay:10s"),
 		hx.Swap("outerHTML"),
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
@@ -129,7 +117,11 @@ func Navbar(currentPath string, context *PageData, links []PageLink) g.Node {
 					g.If(context.CurrentUser == nil, NavbarLink("/login", "Log in", currentPath == "/login")),
 					g.Iff(context.CurrentUser != nil,
 						func() g.Node {
-							return g.Group([]g.Node{Span(Class("prose"), g.Text(context.CurrentUser.Username)), NavbarLink("/logout", "Log out", false)})
+							return g.Group([]g.Node{
+								Span(Class("prose mr-2 inline-block"),
+									g.Text(context.CurrentUser.Username)),
+								NavbarLink("/logout", "Log out", false),
+							})
 						}),
 				),
 			),

@@ -7,11 +7,10 @@ import (
 )
 
 func LoginPage(path string, context *PageData) g.Node {
-	return Page("The Orange Website | Login", path, LoginForm(), &PageData{})
+	return Page("The Orange Website | Login", path, LoginForm(context.FormState), context)
 }
 
-func LoginForm() g.Node {
-	form := NewFormState()
+func LoginForm(form *FormState) g.Node {
 	return Div(
 		Class("flex min-h-full flex-col justify-center px-6 py-12 lg:px-8"),
 		Div(

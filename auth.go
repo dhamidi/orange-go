@@ -55,6 +55,8 @@ func (self *Auth) HandleQuery(query Query) error {
 		return self.findSession(query)
 	case *FindUserBySessionID:
 		return self.FindUserBySessionID(query)
+	case *FindUserPasswordHash:
+		return self.findUserPasswordHash(query)
 	default:
 		return ErrQueryNotAccepted
 	}

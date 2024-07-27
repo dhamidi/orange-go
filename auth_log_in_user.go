@@ -31,11 +31,8 @@ func (self *Auth) handleLogInUser(cmd *LogInUser) error {
 	if user == nil {
 		return ErrInvalidCredentials
 	}
-	passwordMatches, err := ComparedPasswordHashes(cmd.PasswordHash, user.PasswordHash)
-	if err != nil {
-		return fmt.Errorf("Failed to compare password to hash: %w", err)
-	}
-	if !passwordMatches {
+
+	if cmd.PasswordHash != user.PasswordHash {
 		return ErrInvalidCredentials
 	}
 	if err := self.state.SetSession(&Session{

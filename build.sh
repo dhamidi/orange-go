@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+export GOEXPERIMENT=rangefunc
 
 case "${1:-local}" in
 "digitalocean")

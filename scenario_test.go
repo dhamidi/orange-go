@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type TestContext struct {
@@ -36,6 +38,30 @@ func (t *TestContext) postLink(url, title string) Command {
 	}
 }
 
+func (t *TestContext) signup(username, password string) Command {
+	t.t.Helper()
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		t.t.Fatalf("failed to hash password: %s", err)
+	}
+	return &SignUpUser{
+		Username:     username,
+		PasswordHash: passwordHash.String(),
+		CreatedAt:    time.Now(),
+	}
+}
+
+func (t *TestContext) login(username, passwordHash string) Command {
+	t.t.Helper()
+	sessionID := uuid.NewString()
+	return &LogInUser{
+		SessionID:    sessionID,
+		Username:     username,
+		PasswordHash: passwordHash,
+		AttemptedAt:  time.Now(),
+	}
+}
+
 func (t *TestContext) frontpage() []*Submission {
 	t.t.Helper()
 	top := NewFrontpageQuery(&t.Viewer)
@@ -43,6 +69,18 @@ func (t *TestContext) frontpage() []*Submission {
 		t.t.Fatalf("%s", err)
 	}
 	return top.Submissions
+}
+
+func (t *TestContext) findPasswordHash(username, password string) (string, error) {
+	t.t.Helper()
+	q := NewFindUserPasswordHash(username, password)
+	if err := t.App.HandleQuery(q); err != nil {
+		return "", err
+	}
+	if q.PasswordHash == nil {
+		return "", nil
+	}
+	return q.PasswordHash.String(), nil
 }
 
 func (t *TestContext) do(cmd Command) error {

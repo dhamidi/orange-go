@@ -3,11 +3,14 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 
 	"golang.org/x/crypto/scrypt"
 )
+
+var ErrPasswordMismatch = errors.New("password mismatch")
 
 type PasswordHash struct {
 	SaltByteSize    int
@@ -44,6 +47,25 @@ func (p *PasswordHash) String() string {
 	)
 }
 
+func (p *PasswordHash) Check(password string) error {
+	salt, err := base64.StdEncoding.DecodeString(p.Salt)
+	if err != nil {
+		return fmt.Errorf("decoding password salt: %w", err)
+	}
+
+	checksum, err := scrypt.Key([]byte(password), salt, p.HashIterations, p.HashBlockSize, p.HashParallelism, p.HashKeySize)
+
+	if err != nil {
+		return fmt.Errorf("generating password checksum: %w", err)
+	}
+
+	if p.Checksum != base64.StdEncoding.EncodeToString(checksum) {
+		return ErrPasswordMismatch
+	}
+
+	return nil
+}
+
 func HashPassword(password string) (*PasswordHash, error) {
 	result := &PasswordHash{
 		SaltByteSize:    16,
@@ -66,16 +88,4 @@ func HashPassword(password string) (*PasswordHash, error) {
 	result.Checksum = base64.StdEncoding.EncodeToString(checksum)
 
 	return result, nil
-}
-
-func ComparedPasswordHashes(hash string, other string) (bool, error) {
-	var a PasswordHash
-	var b PasswordHash
-	if err := a.UnmarshalText([]byte(hash)); err != nil {
-		return false, fmt.Errorf("unmarshalling password hash: %w", err)
-	}
-	if err := b.UnmarshalText([]byte(hash)); err != nil {
-		return false, fmt.Errorf("unmarshalling password hash: %w", err)
-	}
-	return a.Checksum == b.Checksum, nil
 }
