@@ -157,7 +157,7 @@ func main() {
 	config := NewPlatformConfigFromEnv(os.Getenv)
 	app, starters := HackerNews(config)
 	before := time.Now()
-	if err := app.Replay(); err != nil {
+	if err := app.Replay(true); err != nil {
 		fmt.Printf("failed to replay commands: %s\n", err)
 		os.Exit(1)
 	}

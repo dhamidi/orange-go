@@ -35,7 +35,7 @@ func (app *App) Mount(m interface{}) *App {
 	return app
 }
 
-func (app *App) Replay() error {
+func (app *App) Replay(skipErrors bool) error {
 	app.lock.Lock()
 	defer app.lock.Unlock()
 
@@ -50,7 +50,10 @@ func (app *App) Replay() error {
 				continue
 			}
 			if err != nil {
-				return fmt.Errorf("failed to replay command: %w", err)
+				fmt.Errorf("failed to replay command: %w", err)
+				if !skipErrors {
+					return err
+				}
 			}
 		}
 		app.version = command.ID
