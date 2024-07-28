@@ -85,12 +85,13 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 		Title:    title,
 		Language: "en",
 		Head: []g.Node{
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			Script(Src("https://cdn.tailwindcss.com?plugins=forms,typography")),
 			Script(Src("https://unpkg.com/htmx.org@2.0.1")),
 		},
 		Body: []g.Node{
-			Class("flex min-h-screen flex-col"),
-			Navbar(path, context, []PageLink{{}}),
+			Class("m-0 flex min-h-screen flex-col"),
+			Navbar(path, context),
 			Main(Class("flex-auto"), body),
 			PageFooter(),
 		},
@@ -102,29 +103,23 @@ type PageLink struct {
 	Name string
 }
 
-func Navbar(currentPath string, context *PageData, links []PageLink) g.Node {
+func Navbar(currentPath string, context *PageData) g.Node {
 	return Nav(Class("bg-orange-500 mb-4"),
 		Container(
-			Div(Class("flex relative items-center space-x-4 h-16"),
-				Span(Class("text-white font-bold"), g.Text("The Orange Website")),
+			Div(Class("flex relative items-center min-h-16"),
+				Span(Class("text-white font-bold p-2"), g.Text("The Orange Website")),
 				NavbarLink("/", "New", currentPath == "/"),
 				NavbarLink("/submit", "Submit", currentPath == "/submit"),
 
-				// We can Map custom slices to Nodes
-				g.Group(g.Map(links, func(pl PageLink) g.Node {
-					return NavbarLink(pl.Path, pl.Name, currentPath == pl.Path)
-				})),
-				Div(Class("absolute right-0"),
-					g.If(context.CurrentUser == nil, NavbarLink("/login", "Log in", currentPath == "/login")),
-					g.Iff(context.CurrentUser != nil,
-						func() g.Node {
-							return g.Group([]g.Node{
-								Span(Class("prose mr-2 inline-block"),
-									g.Text(context.CurrentUser.Username)),
-								NavbarLink("/logout", "Log out", false),
-							})
-						}),
-				),
+				g.If(context.CurrentUser == nil, NavbarLink("/login", "Log in", currentPath == "/login")),
+				g.Iff(context.CurrentUser != nil,
+					func() g.Node {
+						return g.Group([]g.Node{
+							Span(Class("prose mx-1 text-center inline-block"),
+								g.Text(context.CurrentUser.Username)),
+							NavbarLink("/logout", "Log out", false),
+						})
+					}),
 			),
 		),
 	)
@@ -143,7 +138,7 @@ func NavbarLink(path, text string, active bool) g.Node {
 }
 
 func Container(children ...g.Node) g.Node {
-	return Div(Class("max-w-7xl mx-auto px-2 sm:px-6 lg:px-8"), g.Group(children))
+	return Div(Class("sm:max-w-16 md:max-w-7xl mx-auto px-2 sm:px-6 lg:px-8"), g.Group(children))
 }
 
 func Prose(children ...g.Node) g.Node {
@@ -152,7 +147,7 @@ func Prose(children ...g.Node) g.Node {
 
 func PageFooter() g.Node {
 	return Footer(Class("block"),
-		P(Class("prose prose-sm prose-indigo text-center"),
+		P(Class("text-center text-sm text-gray-400"),
 			ID("rendered-at"),
 			// We can use string interpolation directly, like fmt.Sprintf.
 			g.Textf("Rendered %v. ", time.Now().Format(time.RFC3339)),
