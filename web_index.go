@@ -14,25 +14,25 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 	}
 	templateData := []*pages.Submission{}
 	for _, submission := range q.Submissions {
-		title := submission.Title
+		title := ""
 		imageURL := (*string)(nil)
 		if submission.Preview != nil {
 			if submission.Preview.Title != nil {
-				if len(*submission.Preview.Title) > len(submission.Title) {
-					title = *submission.Preview.Title
-				}
+				title = *submission.Preview.Title
 			}
 			imageURL = submission.Preview.ImageURL
 		}
 		templateData = append(templateData, &pages.Submission{
-			ItemID:      submission.ItemID,
-			Title:       title,
-			ImageURL:    imageURL,
-			Url:         submission.Url,
-			SubmittedAt: submission.SubmittedAt,
-			Submitter:   submission.Submitter,
-			VoteCount:   submission.VoteCount,
-			CanVote:     !submission.ViewerHasVoted,
+			ItemID:         submission.ItemID,
+			Title:          submission.Title,
+			GeneratedTitle: title,
+			ImageURL:       imageURL,
+			Url:            submission.Url,
+			SubmittedAt:    submission.SubmittedAt,
+			Submitter:      submission.Submitter,
+			VoteCount:      submission.VoteCount,
+			CommentCount:   submission.CommentCount,
+			CanVote:        !submission.ViewerHasVoted,
 		})
 	}
 	_ = pages.IndexPage(req.URL.Path, templateData, web.PageData(req)).Render(w)

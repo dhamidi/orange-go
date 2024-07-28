@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"time"
 
 	g "github.com/maragudk/gomponents"
@@ -17,14 +18,36 @@ func TimeLabel(t time.Time) g.Node {
 }
 
 type Submission struct {
-	ItemID      string
-	ImageURL    *string
-	Submitter   string
-	SubmittedAt time.Time
-	Url         string
-	Title       string
-	VoteCount   int
-	CanVote     bool
+	ItemID         string
+	ImageURL       *string
+	Submitter      string
+	SubmittedAt    time.Time
+	Url            string
+	Title          string
+	GeneratedTitle string
+	VoteCount      int
+	CommentCount   int
+	CanVote        bool
+	Comments       []Comment
+}
+
+func (s *Submission) Byline() string {
+	if s.GeneratedTitle == "" {
+		return s.Url
+	}
+
+	return fmt.Sprintf("%s - %s", s.Url, s.GeneratedTitle)
+}
+
+type Comment interface {
+	CommentAuthor() string
+	CommentContent() string
+	WrittenAt() time.Time
+	CommentableID() string
+}
+
+type WithChildren interface {
+	AllChildren() []interface{}
 }
 
 type User struct {
@@ -58,7 +81,9 @@ func SubmissionList(submissions []*Submission) g.Node {
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
 			counter += 1
-			return Div(Class("flex flex-row space-x-2"),
+			return Div(
+				Class("flex flex-row space-x-2"),
+				Data("item-id", s.ItemID),
 				Div(Class("prose w-4 text-center"), g.Textf("%d.", counter)),
 				g.Iff(s.ImageURL != nil, func() g.Node {
 					return Img(Src(*s.ImageURL), Alt(s.Title), Class("w-8 h-8"))
@@ -67,14 +92,19 @@ func SubmissionList(submissions []*Submission) g.Node {
 					return Div(Class("w-8 h-8"))
 				}),
 				Div(
-					P(Class("prose"),
+					P(
 						A(Href(s.Url), g.Text(s.Title)),
 						Span(Class("text-sm ml-1 text-gray-400"),
-							g.Textf("(%s)", s.Url))),
-					Div(Class("prose text-xs"),
+							g.Textf("(%s)", s.Byline())),
+					),
+					Div(
+						Class("prose text-xs"),
 						g.Textf("%d points by %s | ", s.VoteCount, s.Submitter),
 						g.If(s.CanVote, UpvoteButton(s.ItemID)),
-						TimeLabel(s.SubmittedAt)),
+						TimeLabel(s.SubmittedAt),
+						g.Text(" | "),
+						A(Href("/item?id="+s.ItemID), g.Textf("%d comments", s.CommentCount)),
+					),
 				))
 		})))
 }

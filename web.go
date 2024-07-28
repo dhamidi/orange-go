@@ -2,12 +2,18 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"net/http"
 	"orange/pages"
 	"time"
 
+	"embed"
+
 	"github.com/google/uuid"
 )
+
+//go:embed static
+var embeddedStaticFiles embed.FS
 
 type WebApp struct {
 	app *App
@@ -32,11 +38,15 @@ func NewWebApp(app *App) *WebApp {
 }
 
 func (web *WebApp) registerRoutes() {
+	staticFiles, _ := fs.Sub(embeddedStaticFiles, "static")
 	routes := web.mux
+	routes.HandleFunc("/comment", web.DoComment)
+	routes.HandleFunc("/item", web.PageItem)
 	routes.HandleFunc("/upvote", web.DoUpvote)
 	routes.HandleFunc("/submit", web.PageSubmit)
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
+	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
 	routes.HandleFunc("/", web.PageIndex)
 }
 
@@ -70,4 +80,8 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}
 	}
 	return pageData
+}
+
+func isHX(req *http.Request) bool {
+	return req.Header.Get("HX-Request") != ""
 }

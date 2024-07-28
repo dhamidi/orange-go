@@ -1,6 +1,9 @@
 package main
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+)
 
 type InMemoryContentState struct {
 	Submissions   []*Submission
@@ -24,6 +27,15 @@ func NewInMemoryContentState() *InMemoryContentState {
 	}
 }
 
+func (self *InMemoryContentState) GetSubmission(itemID string) (*Submission, error) {
+	for _, submission := range self.Submissions {
+		if submission.ItemID == itemID {
+			return submission, nil
+		}
+	}
+	return nil, ErrItemNotFound
+}
+
 func (self *InMemoryContentState) PutSubmission(submission *Submission) error {
 	self.Submissions = append(self.Submissions, submission)
 	slices.SortFunc(self.Submissions, func(i, j *Submission) int {
@@ -35,6 +47,47 @@ func (self *InMemoryContentState) PutSubmission(submission *Submission) error {
 			return 0
 		}
 	})
+	return nil
+}
+
+func (self *InMemoryContentState) PutComment(comment *Comment) error {
+	submissionID := comment.ParentID[0]
+	submission := (*Submission)(nil)
+	for _, s := range self.Submissions {
+		if s.ItemID == submissionID {
+			submission = s
+			break
+		}
+	}
+
+	if submission == nil {
+		return ErrItemNotFound
+	}
+
+	if len(comment.ParentID) == 1 {
+		comment.Index = len(submission.Comments)
+		submission.Comments = append(submission.Comments, comment)
+		submission.CommentCount++
+		return nil
+	}
+
+	currentComments := ([]*Comment)(submission.Comments)
+	parentComment := (*Comment)(nil)
+	for _, index := range comment.ParentID[1:] {
+		i := 0
+		if _, err := fmt.Sscanf(index, "%d", &i); err != nil {
+			return fmt.Errorf("Malformed tree ID part %q: %w", index, ErrMalformedTreeID)
+		}
+
+		parentComment = currentComments[i]
+		if comment == nil {
+			return fmt.Errorf("No comment at index %d: %w", i, ErrItemNotFound)
+		}
+		currentComments = parentComment.Children
+	}
+
+	parentComment.AddChild(comment)
+	submission.CommentCount++
 	return nil
 }
 

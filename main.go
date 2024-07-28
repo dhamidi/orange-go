@@ -38,14 +38,14 @@ func login(app *App, params []string) {
 	}
 
 	username, password := params[0], params[1]
-	passwordHash, err := HashPassword(password)
-	if err != nil {
+	q := NewFindUserPasswordHash(username, password)
+	if err := app.HandleQuery(q); err != nil {
 		fmt.Printf("failed to hash password: %s\n", err)
 		return
 	}
 	login := &LogInUser{
 		Username:     username,
-		PasswordHash: passwordHash.String(),
+		PasswordHash: q.PasswordHash.String(),
 		AttemptedAt:  time.Now(),
 		SessionID:    uuid.NewString(),
 	}
@@ -127,13 +127,41 @@ func submit(app *App, params []string) {
 	}
 }
 
+func comment(app *App, params []string) {
+	if len(params) < 3 {
+		fmt.Printf("usage: comment <session-id> <item-id> <text>\n")
+		return
+	}
+	sessionID, itemID, text := params[0], params[1], params[2]
+	q := NewFindSessionQuery(sessionID)
+	if err := app.HandleQuery(q); err != nil {
+		fmt.Printf("failed to find session %q: %s\n", sessionID, err)
+		return
+	}
+	if q.Session == nil {
+		fmt.Printf("You are not logged in\n")
+		return
+	}
+	commentOn := &PostComment{
+		ParentID: NewTreeID(itemID),
+		Author:   q.Session.Username,
+		Content:  text,
+		PostedAt: time.Now(),
+	}
+	if err := app.HandleCommand(commentOn); err != nil {
+		fmt.Printf("failed to post comment: %s\n", err)
+	}
+}
+
 func main() {
 	config := NewPlatformConfigFromEnv(os.Getenv)
 	app, starters := HackerNews(config)
+	before := time.Now()
 	if err := app.Replay(); err != nil {
 		fmt.Printf("failed to replay commands: %s\n", err)
 		os.Exit(1)
 	}
+	after := time.Now()
 	subcommand := "serve"
 	if len(os.Args) >= 2 {
 		subcommand = os.Args[1]
@@ -144,6 +172,8 @@ func main() {
 		signup(app, os.Args[2:])
 	case "log-in":
 		login(app, os.Args[2:])
+	case "comment":
+		comment(app, os.Args[2:])
 	case "submit":
 		submit(app, os.Args[2:])
 	case "upvote":
@@ -162,6 +192,7 @@ func main() {
 		if len(os.Args) > 2 {
 			conninfo = os.Args[2]
 		}
+		fmt.Printf("Replayed events in %s\n", after.Sub(before))
 		for _, starter := range starters {
 			starter.Start()
 		}

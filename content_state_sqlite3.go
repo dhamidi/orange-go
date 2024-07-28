@@ -56,6 +56,26 @@ func (self *PersistentContentState) PutSubmission(submission *Submission) error 
 	return nil
 }
 
+func (self *PersistentContentState) GetSubmission(itemID string) (*Submission, error) {
+	db, err := sql.Open("sqlite3", self.conninfo())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+	submission := &Submission{
+		ItemID: itemID,
+	}
+	if err := db.QueryRow(`SELECT submitter, url, title, submitted_at FROM submissions WHERE item_id = ?`, itemID).Scan(
+		&submission.Submitter, &submission.Url, &submission.Title, &submission.SubmittedAt); err != nil {
+		return nil, fmt.Errorf("failed to get submission: %w", err)
+	}
+	return submission, nil
+}
+
+func (self *PersistentContentState) PutComment(comment *Comment) error {
+	return ErrItemNotFound
+}
+
 func (self *PersistentContentState) PutSubmissionPreview(preview *SubmissionPreview) error {
 	db, err := sql.Open("sqlite3", self.conninfo())
 	if err != nil {
