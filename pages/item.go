@@ -25,6 +25,9 @@ func SubmissionDetail(s *Submission) g.Node {
 				g.If(s.CanVote, UpvoteButton(s.ItemID)),
 				TimeLabel(s.SubmittedAt),
 				g.Textf(" | %d comments", s.CommentCount)),
+			Div(
+				Class("my-2"),
+				CommentForm(s.ItemID, NewFormState())),
 		),
 		g.Group(g.Map(s.Comments, func(c Comment) g.Node {
 			return CommentWithChildren(c)
