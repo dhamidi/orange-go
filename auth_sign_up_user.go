@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+var ErrUserExists = fmt.Errorf("user already exists")
+
 type SignUpUser struct {
 	Username     string
 	PasswordHash string
@@ -25,7 +27,7 @@ func (self *Auth) handleSignUpUser(cmd *SignUpUser) error {
 		return err
 	}
 	if user != nil {
-		return fmt.Errorf("user already exists")
+		return ErrUserExists
 	}
 	return self.state.SetUser(&User{
 		Username:     cmd.Username,
