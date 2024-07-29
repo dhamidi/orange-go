@@ -6,6 +6,13 @@ import (
 )
 
 func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
+	currentUser := web.CurrentUser(req)
+	itemID := req.FormValue("item_id")
+	if currentUser == nil {
+		web.LogInFirst(w, req)
+		return
+	}
+
 	if req.Method == "GET" && isHX(req) {
 		pages.CommentForm(req.FormValue("item_id"), pages.NewFormState()).Render(w)
 		return
@@ -16,12 +23,6 @@ func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	currentUser := web.CurrentUser(req)
-	itemID := req.FormValue("item_id")
-	if currentUser == nil {
-		http.Redirect(w, req, "/login", http.StatusSeeOther)
-		return
-	}
 	cmd := &PostComment{
 		ParentID: NewTreeID(itemID),
 		Author:   currentUser.Username,

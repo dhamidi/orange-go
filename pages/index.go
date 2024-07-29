@@ -2,6 +2,7 @@ package pages
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	g "github.com/maragudk/gomponents"
@@ -57,6 +58,7 @@ type User struct {
 type PageData struct {
 	CurrentUser *User
 	FormState   *FormState
+	BackTo      *url.URL
 }
 
 func (p *PageData) Username() *string {

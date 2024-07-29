@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"orange/pages"
 	"time"
 
@@ -79,9 +80,39 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 	if currentUser != nil {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}
 	}
+	backToRaw := ""
+	if backTo := req.FormValue("back_to"); backTo != "" {
+		backToRaw = backTo
+	} else if req.Header.Get("X-Back-To") != "" {
+		backToRaw = req.Header.Get("X-Back-To")
+	}
+	backToURL, err := url.Parse(backToRaw)
+	if err == nil {
+		pageData.BackTo = backToURL
+	}
 	return pageData
 }
 
 func isHX(req *http.Request) bool {
 	return req.Header.Get("HX-Request") != ""
+}
+
+func (web *WebApp) LogInFirst(w http.ResponseWriter, req *http.Request) {
+	referer := &url.URL{Path: req.URL.Path, RawQuery: req.URL.Query().Encode()}
+	if currentURL := req.Header.Get("HX-Current-Url"); currentURL != "" {
+		backTo, _ := url.Parse(currentURL)
+		referer.Path = backTo.Path
+		referer.RawQuery = backTo.RawQuery
+	}
+	redirectTo := &url.URL{
+		Path:     "/login",
+		RawQuery: url.Values{"back_to": []string{referer.String()}}.Encode(),
+	}
+
+	if isHX(req) {
+		w.Header().Add("HX-Redirect", redirectTo.String())
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		http.Redirect(w, req, req.URL.String(), http.StatusSeeOther)
+	}
 }

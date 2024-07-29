@@ -60,5 +60,9 @@ func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 		Value:    sessionID,
 		HttpOnly: true,
 	})
-	http.Redirect(w, req, "/", http.StatusSeeOther)
+	backTo := req.FormValue("back_to")
+	if backTo == "" {
+		backTo = "/"
+	}
+	http.Redirect(w, req, backTo, http.StatusSeeOther)
 }

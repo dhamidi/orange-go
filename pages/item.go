@@ -8,10 +8,21 @@ import (
 )
 
 func ItemPage(path string, submission *Submission, context *PageData) g.Node {
-	return Page("The Orange Website", path, SubmissionDetail(submission), context)
+	detail := WithoutCommentForm
+	if context.CurrentUser != nil {
+		detail = WithCommentForm
+	}
+	return Page("The Orange Website", path, SubmissionDetail(submission, detail), context)
 }
 
-func SubmissionDetail(s *Submission) g.Node {
+type SubmissionDetailElement string
+
+const (
+	WithoutCommentForm SubmissionDetailElement = "without_comment_form"
+	WithCommentForm    SubmissionDetailElement = "with_comment_form"
+)
+
+func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
 	return Container(
 		Class("flex flex-col space-y-2"),
 		Div(
@@ -27,7 +38,8 @@ func SubmissionDetail(s *Submission) g.Node {
 				g.Textf(" | %d comments", s.CommentCount)),
 			Div(
 				Class("my-2"),
-				CommentForm(s.ItemID, NewFormState())),
+				g.If(with == WithCommentForm, CommentForm(s.ItemID, NewFormState())),
+			),
 		),
 		g.Group(g.Map(s.Comments, func(c Comment) g.Node {
 			return CommentWithChildren(c)

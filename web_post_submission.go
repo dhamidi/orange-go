@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"orange/pages"
 )
 
@@ -11,7 +12,7 @@ func (web *WebApp) PageSubmit(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
 		if currentUser == nil {
-			http.Redirect(w, req, "/login", http.StatusSeeOther)
+			http.Redirect(w, req, "/login?back_to="+url.QueryEscape("/submit"), http.StatusSeeOther)
 			return
 		}
 		form := pages.NewFormState()
