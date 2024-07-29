@@ -33,7 +33,7 @@ func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 	query := url.Values{}
 	query.Set("error", "invalid-credentials")
 	query.Set("username", req.FormValue("username"))
-	if err := web.app.HandleQuery(q); err != nil {
+	if err := web.app.HandleQuery(q); err != nil || q.PasswordHash == nil {
 		http.Redirect(w, req, "/login?"+query.Encode(), http.StatusSeeOther)
 		return
 	}
