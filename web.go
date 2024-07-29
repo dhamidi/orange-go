@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"net/http"
 	"net/url"
 	"orange/pages"
+	"os"
 	"time"
 
 	"embed"
@@ -17,8 +19,9 @@ import (
 var embeddedStaticFiles embed.FS
 
 type WebApp struct {
-	app *App
-	mux *http.ServeMux
+	app    *App
+	mux    *http.ServeMux
+	logger *log.Logger
 
 	SessionIDGenerator func() string
 	ItemIDGenerator    func() string
@@ -29,6 +32,7 @@ func NewWebApp(app *App) *WebApp {
 	web := &WebApp{
 		app:                app,
 		mux:                http.NewServeMux(),
+		logger:             log.New(os.Stdout, "[web]", log.LstdFlags),
 		SessionIDGenerator: uuid.NewString,
 		ItemIDGenerator:    uuid.NewString,
 		CurrentTime:        time.Now,
@@ -47,6 +51,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/submit", web.PageSubmit)
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
+	routes.HandleFunc("/admin/events", web.PageEventLog)
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
 	routes.HandleFunc("/", web.PageIndex)
 }
