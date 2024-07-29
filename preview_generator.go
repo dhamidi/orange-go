@@ -40,6 +40,17 @@ func (p *PreviewGenerator) recordGeneratedPreview(c *SetSubmissionPreview) error
 	return nil
 }
 
+func (p *PreviewGenerator) shouldRegenerateFor(itemID string) bool {
+	lastCheck, ok := p.GeneratedPreviews[itemID]
+	if !ok {
+		// we have never generated a preview for this item
+		return true
+	}
+
+	// If the preview is older than a week, it should get regenerated
+	return time.Now().Sub(lastCheck) > 24*time.Hour*7
+}
+
 func (p *PreviewGenerator) Start() func() {
 	stop := make(chan struct{})
 	commands, err := p.Commands.After(0)
@@ -78,7 +89,9 @@ func (p *PreviewGenerator) fetchPreviews() {
 	}
 	for command := range commands {
 		if postLink, ok := command.Message.(*PostLink); ok {
-			p.fetchPreview(postLink.ItemID, postLink.Url)
+			if p.shouldRegenerateFor(postLink.ItemID) {
+				p.fetchPreview(postLink.ItemID, postLink.Url)
+			}
 		}
 		p.Version = command.ID
 	}
