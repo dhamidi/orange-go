@@ -6,6 +6,7 @@ import (
 )
 
 var ErrUserExists = fmt.Errorf("user already exists")
+var ErrUsernameNotAllowed = fmt.Errorf("username not allowed")
 
 type SignUpUser struct {
 	Username     string
@@ -26,9 +27,20 @@ func (self *Auth) handleSignUpUser(cmd *SignUpUser) error {
 	if err != nil {
 		return err
 	}
+
 	if user != nil {
 		return ErrUserExists
 	}
+
+	policy := new(UsernamePolicy)
+	if err := self.state.GetPolicy(policy); err != nil {
+		return fmt.Errorf("failed to get username policy: %w", err)
+	}
+
+	if !policy.Allowed(cmd.Username) {
+		return ErrUsernameNotAllowed
+	}
+
 	return self.state.SetUser(&User{
 		Username:     cmd.Username,
 		PasswordHash: cmd.PasswordHash,

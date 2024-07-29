@@ -5,6 +5,8 @@ import (
 )
 
 type AuthState interface {
+	GetPolicy(policy *UsernamePolicy) error
+	PutPolicy(policy *UsernamePolicy) error
 	SetUser(user *User) error
 	FindUser(username string) (*User, error)
 	FindSession(sessionID string) (*Session, error)
@@ -21,6 +23,24 @@ type Session struct {
 	Username   string
 	ActiveFrom time.Time
 	ActiveTo   time.Time
+}
+
+type UsernamePolicy struct {
+	MinLength int
+	MaxLength int
+	Blacklist []string
+}
+
+func (policy *UsernamePolicy) Allowed(username string) bool {
+	if len(username) < policy.MinLength || len(username) > policy.MaxLength {
+		return false
+	}
+	for _, blacklisted := range policy.Blacklist {
+		if blacklisted == username {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Session) IsActive(now time.Time) bool {
@@ -45,6 +65,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleSignUpUser(cmd)
 	case *LogInUser:
 		return self.handleLogInUser(cmd)
+	case *ChangeUsernamePolicy:
+		return self.handleChangeUsernamePolicy(cmd)
 	}
 	return ErrCommandNotAccepted
 }

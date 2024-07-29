@@ -1,8 +1,9 @@
 package main
 
 type InMemoryAuthState struct {
-	Users    map[string]*User
-	Sessions map[string]*Session
+	UsernamePolicy *UsernamePolicy
+	Users          map[string]*User
+	Sessions       map[string]*Session
 }
 
 func NewInMemoryAuthState() *InMemoryAuthState {
@@ -28,4 +29,21 @@ func (state *InMemoryAuthState) FindSession(sessionID string) (*Session, error) 
 
 func (state *InMemoryAuthState) FindUser(username string) (*User, error) {
 	return state.Users[username], nil
+}
+
+func (state *InMemoryAuthState) PutPolicy(policy *UsernamePolicy) error {
+	state.UsernamePolicy = policy
+	return nil
+}
+
+func (state *InMemoryAuthState) GetPolicy(policy *UsernamePolicy) error {
+	if state.UsernamePolicy == nil {
+		*policy = UsernamePolicy{
+			MinLength: 0,
+			MaxLength: 100,
+		}
+		return nil
+	}
+	*policy = *state.UsernamePolicy
+	return nil
 }

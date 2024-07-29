@@ -192,7 +192,7 @@ func main() {
 	config := NewPlatformConfigFromEnv(os.Getenv)
 	app, starters := HackerNews(config)
 	before := time.Now()
-	if err := app.Replay(true); err != nil {
+	if err := app.Replay(false); err != nil {
 		fmt.Printf("failed to replay commands: %s\n", err)
 		os.Exit(1)
 	}
@@ -203,6 +203,15 @@ func main() {
 	}
 
 	switch subcommand {
+	case "set-default-username-policy":
+		setUsernamePolicy := &ChangeUsernamePolicy{
+			MinLength: 10,
+			MaxLength: 100,
+			Blacklist: []string{"guest"},
+		}
+		if err := app.HandleCommand(setUsernamePolicy); err != nil {
+			fmt.Printf("failed to set username policy: %s\n", err)
+		}
 	case "signup":
 		signup(app, os.Args[2:])
 	case "log-in":
