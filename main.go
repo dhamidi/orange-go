@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,13 +68,45 @@ func findSession(app *App, sessionID string) {
 	fmt.Printf("%+v\n", q.Session)
 }
 
-func list(log CommandLog) {
-	commands, err := log.After(0)
+func list(app *App, params []string) {
+	after := 0
+	if len(params) > 0 {
+		i, err := strconv.Atoi(params[0])
+		if err == nil {
+			after = i
+		}
+	}
+	log := app.Commands
+	commands, err := log.After(after)
 	if err != nil {
 		fmt.Printf("failed to list commands: %s\n", err)
 	}
+
+	formatFieldValue := func(v reflect.Value) string {
+		switch v.Kind() {
+		case reflect.Pointer:
+			if v.IsZero() {
+				return "<nil>"
+			} else {
+				return fmt.Sprintf("%q", v.Elem())
+			}
+		default:
+			return fmt.Sprintf("%q", v.Interface())
+		}
+	}
+	formatPayload := func(command Command) string {
+		c := reflect.ValueOf(command).Elem() // &PostLink{...} -> PostLink{...}
+		t := c.Type()                        // PostLink{...} -> PostLink
+		buffer := bytes.NewBufferString("")
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			fmt.Fprintf(buffer, " %s=%s", field.Name, formatFieldValue(c.Field(i)))
+		}
+		return buffer.String()
+	}
+
 	for command := range commands {
-		fmt.Printf("%3d %20s %+v\n", command.ID, command.Message.CommandName(), command.Message)
+		fmt.Printf("%3d %20s %s\n", command.ID, command.Message.CommandName(), formatPayload(command.Message))
 	}
 }
 
@@ -185,7 +220,7 @@ func main() {
 		}
 		findSession(app, sessionID)
 	case "log":
-		list(app.Commands)
+		list(app, os.Args[2:])
 	case "serve":
 		web := NewWebApp(app)
 		conninfo := ":8080"
