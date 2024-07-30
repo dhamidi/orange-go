@@ -10,7 +10,7 @@ type SetSubmissionPreview struct {
 func (cmd *SetSubmissionPreview) CommandName() string { return "SetSubmissionPreview" }
 
 func init() {
-	DefaultSerializer.Register("SetSubmissionPreview", func() Command { return &SetSubmissionPreview{} })
+	DefaultCommandRegistry.Register("SetSubmissionPreview", func() Command { return &SetSubmissionPreview{} })
 }
 
 func (self *Content) handleSetSubmissionPreview(cmd *SetSubmissionPreview) error {

@@ -20,7 +20,7 @@ func (cmd *LogInUser) CommandName() string {
 }
 
 func init() {
-	DefaultSerializer.Register("LogInUser", func() Command { return &LogInUser{} })
+	DefaultCommandRegistry.Register("LogInUser", func() Command { return &LogInUser{} })
 }
 
 func (self *Auth) handleLogInUser(cmd *LogInUser) error {

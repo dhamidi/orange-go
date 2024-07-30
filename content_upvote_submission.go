@@ -20,7 +20,7 @@ type UpvoteSubmission struct {
 func (cmd *UpvoteSubmission) CommandName() string { return "UpvoteSubmission" }
 
 func init() {
-	DefaultSerializer.Register("UpvoteSubmission", func() Command { return &UpvoteSubmission{} })
+	DefaultCommandRegistry.Register("UpvoteSubmission", func() Command { return &UpvoteSubmission{} })
 }
 
 func (self *Content) handleUpvoteSubmission(cmd *UpvoteSubmission) error {

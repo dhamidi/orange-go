@@ -24,7 +24,7 @@ type PostComment struct {
 func (cmd *PostComment) CommandName() string { return "PostComment" }
 
 func init() {
-	DefaultSerializer.Register("PostComment", func() Command { return new(PostComment) })
+	DefaultCommandRegistry.Register("PostComment", func() Command { return new(PostComment) })
 }
 
 func (self *Content) handlePostComment(cmd *PostComment) error {

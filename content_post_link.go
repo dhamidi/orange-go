@@ -18,7 +18,7 @@ func (cmd *PostLink) CommandName() string {
 }
 
 func init() {
-	DefaultSerializer.Register("PostLink", func() Command { return &PostLink{} })
+	DefaultCommandRegistry.Register("PostLink", func() Command { return &PostLink{} })
 }
 
 func (self *Content) handlePostLink(cmd *PostLink) error {

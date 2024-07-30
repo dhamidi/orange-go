@@ -9,7 +9,7 @@ type ChangeUsernamePolicy struct {
 func (cmd *ChangeUsernamePolicy) CommandName() string { return "ChangeUsernamePolicy" }
 
 func init() {
-	DefaultSerializer.Register("ChangeUsernamePolicy", func() Command { return new(ChangeUsernamePolicy) })
+	DefaultCommandRegistry.Register("ChangeUsernamePolicy", func() Command { return new(ChangeUsernamePolicy) })
 }
 
 func (self *Auth) handleChangeUsernamePolicy(cmd *ChangeUsernamePolicy) error {

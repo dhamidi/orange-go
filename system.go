@@ -51,9 +51,25 @@ type QueryHandler interface {
 var ErrCommandNotAccepted = fmt.Errorf("command not accepted")
 var ErrQueryNotAccepted = fmt.Errorf("query not accepted")
 
+type CommandRegistry map[string]NewCommand
+
+func (s CommandRegistry) Register(name string, newMessage NewCommand) {
+	s[name] = newMessage
+}
+
+func (s CommandRegistry) New(name string) (Command, bool) {
+	newMessage, ok := s[name]
+	if !ok {
+		return nil, false
+	}
+	return newMessage(), true
+}
+
+var DefaultCommandRegistry = make(CommandRegistry)
+
 type NewCommand func() Command
 type JSONSerializer struct {
-	messages map[string]NewCommand
+	commands CommandRegistry
 }
 
 type RawJSONMessage struct {
@@ -61,14 +77,10 @@ type RawJSONMessage struct {
 	Message json.RawMessage `json:"message"`
 }
 
-func NewJSONSerializer() *JSONSerializer {
+func NewJSONSerializer(registry CommandRegistry) *JSONSerializer {
 	return &JSONSerializer{
-		messages: make(map[string]NewCommand),
+		registry,
 	}
-}
-
-func (s *JSONSerializer) Register(name string, newMessage NewCommand) {
-	s.messages[name] = newMessage
 }
 
 func (s *JSONSerializer) Encode(message Command) ([]byte, error) {
@@ -90,13 +102,13 @@ func (s *JSONSerializer) Decode(data []byte, message *Command) error {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return fmt.Errorf("failed to unmarshal message: %w", err)
 	}
-	if newMessage, ok := s.messages[m.Type]; ok {
-		*message = newMessage()
+	if newMessage, ok := s.commands.New(m.Type); ok {
+		*message = newMessage
 	}
 	return json.Unmarshal(m.Message, message)
 }
 
-var DefaultSerializer = NewJSONSerializer()
+var DefaultSerializer = NewJSONSerializer(DefaultCommandRegistry)
 
 type CommandLog interface {
 	Append(command Command) error

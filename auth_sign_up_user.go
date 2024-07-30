@@ -19,7 +19,7 @@ func (cmd *SignUpUser) CommandName() string {
 }
 
 func init() {
-	DefaultSerializer.Register("SignUpUser", func() Command { return &SignUpUser{} })
+	DefaultCommandRegistry.Register("SignUpUser", func() Command { return &SignUpUser{} })
 }
 
 func (self *Auth) handleSignUpUser(cmd *SignUpUser) error {
