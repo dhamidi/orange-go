@@ -91,7 +91,7 @@ func SubmissionList(submissions []*Submission) g.Node {
 					return Div(Class(fmt.Sprintf("min-w-8 w-8 h-8 bg-[url('%s')] bg-contain bg-center bg-no-repeat", *s.ImageURL)))
 				}),
 				g.Iff(s.ImageURL == nil, func() g.Node {
-					return Div(Class("w-8 h-8"))
+					return Div(Class("min-w-8 w-8 h-8"))
 				}),
 				Div(
 					P(
