@@ -88,7 +88,7 @@ func SubmissionList(submissions []*Submission) g.Node {
 				Data("item-id", s.ItemID),
 				Div(Class("prose w-4 text-center"), g.Textf("%d.", counter)),
 				g.Iff(s.ImageURL != nil, func() g.Node {
-					return Div(Class(fmt.Sprintf("w-8 h-8 bg-[url('%s')] bg-contain bg-center bg-no-repeat", *s.ImageURL)))
+					return Div(Class(fmt.Sprintf("min-w-8 w-8 h-8 bg-[url('%s')] bg-contain bg-center bg-no-repeat", *s.ImageURL)))
 				}),
 				g.Iff(s.ImageURL == nil, func() g.Node {
 					return Div(Class("w-8 h-8"))
@@ -96,7 +96,7 @@ func SubmissionList(submissions []*Submission) g.Node {
 				Div(
 					P(
 						A(Href(s.Url), g.Text(s.Title)),
-						Span(Class("text-sm ml-1 text-gray-400"),
+						Span(Class("text-sm ml-1 break-words text-gray-400"),
 							g.Textf("(%s)", s.Byline())),
 					),
 					Div(

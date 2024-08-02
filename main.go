@@ -3,9 +3,28 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
+
+func p(i int) string {
+	if len(os.Args) > i {
+		return os.Args[i]
+	}
+	return ""
+}
+
+func run(err error, usage ...string) {
+	if err != nil {
+		if len(usage) > 0 {
+			fmt.Printf("usage %s\n", strings.Join(usage, " "))
+		}
+		fmt.Printf("failed: %s\n", err)
+		os.Exit(1)
+	}
+}
 
 func main() {
 	config := NewPlatformConfigFromEnv(os.Getenv)
@@ -33,9 +52,17 @@ func main() {
 			fmt.Printf("failed to set username policy: %s\n", err)
 		}
 	case "signup":
-		shell.Signup(os.Args[2:])
+		values := url.Values{}
+		values.Set("username", p(2))
+		values.Set("password", p(3))
+		run(shell.Signup(values), "signup <username> <password>")
 	case "log-in":
-		shell.Login(os.Args[2:])
+		values := url.Values{}
+		values.Set("username", p(2))
+		values.Set("password", p(3))
+		sessionID, err := shell.Login(values)
+		run(err, "login <username> <password>")
+		fmt.Printf("%s\n", sessionID)
 	case "comment":
 		shell.Comment(os.Args[2:])
 	case "submit":

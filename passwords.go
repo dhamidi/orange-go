@@ -35,6 +35,10 @@ func (p *PasswordHash) UnmarshalText(text []byte) error {
 	return err
 }
 
+func (p *PasswordHash) MarshalText() ([]byte, error) {
+	return []byte(p.String()), nil
+}
+
 func (p *PasswordHash) String() string {
 	return fmt.Sprintf("scrypt$%d$%d$%d$%d$%d$%s$%s",
 		p.SaltByteSize,

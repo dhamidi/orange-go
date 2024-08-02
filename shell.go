@@ -28,21 +28,20 @@ func NewDefaultShell(app *App) *Shell {
 	}
 }
 
+type Parameters interface {
+	Get(key string) string
+}
+
 func (s *Shell) Info(format string, args ...interface{}) {
 	fmt.Fprintf(s.Output, format, args...)
 }
 
-func (s *Shell) Signup(params []string) {
-	if len(params) < 2 {
-		s.Info("usage: signup <username> <password>\n")
-		return
-	}
-	username, password := params[0], params[1]
+func (s *Shell) Signup(params Parameters) error {
+	username, password := params.Get("username"), params.Get("password")
 
 	passwordHash, err := HashPassword(password)
 	if err != nil {
-		s.Info("failed to hash password: %s\n", err)
-		return
+		return fmt.Errorf("signup: failed to hash password: %w", err)
 	}
 	signup := &SignUpUser{
 		Username:     username,
@@ -50,21 +49,19 @@ func (s *Shell) Signup(params []string) {
 		CreatedAt:    s.CurrentTime(),
 	}
 	if err := s.App.HandleCommand(signup); err != nil {
-		fmt.Fprintf(s.Output, "failed to sign up user: %s\n", err)
+		return fmt.Errorf("signup: %w", err)
 	}
+	return nil
 }
 
-func (s *Shell) Login(params []string) {
-	if len(params) < 2 {
-		s.Info("usage: log-in <username> <password>\n")
-		return
-	}
-
-	username, password := params[0], params[1]
+func (s *Shell) Login(params Parameters) (string, error) {
+	username, password := params.Get("username"), params.Get("password")
 	q := NewFindUserPasswordHash(username, password)
 	if err := s.App.HandleQuery(q); err != nil {
-		s.Info("failed to hash password: %s\n", err)
-		return
+		return "", fmt.Errorf("login: failed to hash password: %w\n", err)
+	}
+	if q.PasswordHash == nil {
+		return "", ErrInvalidCredentials
 	}
 	login := &LogInUser{
 		Username:     username,
@@ -73,10 +70,10 @@ func (s *Shell) Login(params []string) {
 		SessionID:    s.NewID(),
 	}
 	if err := s.App.HandleCommand(login); err != nil {
-		s.Info("failed to log in user: %s\n", err)
-		return
+		return "", fmt.Errorf("failed to log in user: %w\n", err)
+
 	}
-	s.Info("%s\n", login.SessionID)
+	return login.SessionID, nil
 }
 
 func (s *Shell) FindSession(sessionID string) {
@@ -104,6 +101,16 @@ func (s *Shell) List(params []string) {
 
 	formatFieldValue := func(v reflect.Value) string {
 		switch v.Kind() {
+		case reflect.Struct:
+			if t, ok := v.Interface().(fmt.Stringer); ok {
+				return fmt.Sprintf("%q", t)
+			}
+			if v.CanAddr() {
+				if t, ok := v.Addr().Interface().(fmt.Stringer); ok {
+					return fmt.Sprintf("%q", t)
+				}
+			}
+			return fmt.Sprintf("%#v", v.Interface())
 		case reflect.Pointer:
 			if v.IsZero() {
 				return "<nil>"
