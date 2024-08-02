@@ -10,7 +10,7 @@ var ErrInvalidCredentials = errors.New("invalid_credentials")
 
 type LogInUser struct {
 	Username     string
-	PasswordHash string
+	PasswordHash PasswordHash
 	AttemptedAt  time.Time
 	SessionID    string
 }
@@ -32,7 +32,7 @@ func (self *Auth) handleLogInUser(cmd *LogInUser) error {
 		return ErrInvalidCredentials
 	}
 
-	if cmd.PasswordHash != user.PasswordHash {
+	if cmd.PasswordHash.String() != user.PasswordHash {
 		return ErrInvalidCredentials
 	}
 	if err := self.state.SetSession(&Session{

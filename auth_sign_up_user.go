@@ -10,7 +10,7 @@ var ErrUsernameNotAllowed = fmt.Errorf("username not allowed")
 
 type SignUpUser struct {
 	Username     string
-	PasswordHash string
+	PasswordHash PasswordHash
 	CreatedAt    time.Time
 }
 
@@ -43,6 +43,6 @@ func (self *Auth) handleSignUpUser(cmd *SignUpUser) error {
 
 	return self.state.SetUser(&User{
 		Username:     cmd.Username,
-		PasswordHash: cmd.PasswordHash,
+		PasswordHash: cmd.PasswordHash.String(),
 	})
 }

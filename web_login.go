@@ -40,7 +40,7 @@ func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 
 	logIn := &LogInUser{
 		Username:     req.FormValue("username"),
-		PasswordHash: q.PasswordHash.String(),
+		PasswordHash: *q.PasswordHash,
 		AttemptedAt:  now,
 		SessionID:    sessionID,
 	}

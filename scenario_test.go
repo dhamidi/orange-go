@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -46,18 +47,22 @@ func (t *TestContext) signup(username, password string) Command {
 	}
 	return &SignUpUser{
 		Username:     username,
-		PasswordHash: passwordHash.String(),
+		PasswordHash: *passwordHash,
 		CreatedAt:    time.Now(),
 	}
 }
 
-func (t *TestContext) login(username, passwordHash string) Command {
+func (t *TestContext) login(username string, password string) Command {
 	t.t.Helper()
 	sessionID := uuid.NewString()
+	q := NewFindUserPasswordHash(username, password)
+	if err := t.App.HandleQuery(q); err != nil {
+		t.t.Fatalf("failed to find password hash: %s", err)
+	}
 	return &LogInUser{
 		SessionID:    sessionID,
 		Username:     username,
-		PasswordHash: passwordHash,
+		PasswordHash: *q.PasswordHash,
 		AttemptedAt:  time.Now(),
 	}
 }
@@ -71,16 +76,28 @@ func (t *TestContext) frontpage() []*Submission {
 	return top.Submissions
 }
 
-func (t *TestContext) findPasswordHash(username, password string) (string, error) {
+func (t *TestContext) findPasswordHash(username, password string) (*PasswordHash, error) {
 	t.t.Helper()
 	q := NewFindUserPasswordHash(username, password)
 	if err := t.App.HandleQuery(q); err != nil {
-		return "", err
+		return nil, err
 	}
-	if q.PasswordHash == nil {
-		return "", nil
+	return q.PasswordHash, nil
+}
+
+func (t *TestContext) setUsernamePolicy(minLength, maxLength int) Command {
+	return &ChangeUsernamePolicy{
+		MinLength: minLength,
+		MaxLength: maxLength,
 	}
-	return q.PasswordHash.String(), nil
+}
+
+func (t *TestContext) forbidUsername(usernames ...string) Command {
+	return &ChangeUsernamePolicy{
+		MinLength: 0,
+		MaxLength: 100,
+		Blacklist: usernames,
+	}
 }
 
 func (t *TestContext) do(cmd Command) error {
@@ -91,6 +108,17 @@ func (t *TestContext) must(cmd Command) {
 	t.t.Helper()
 	if err := t.App.HandleCommand(cmd); err != nil {
 		t.t.Fatalf("failed to execute %s: %s", cmd.CommandName(), err)
+	}
+}
+
+func (t *TestContext) mustFailWith(cmd Command, expected error) {
+	t.t.Helper()
+	err := t.do(cmd)
+	if err == nil {
+		t.t.Fatalf("expected error, got nil")
+	}
+	if !errors.Is(err, expected) {
+		t.t.Fatalf("expected %s, got %s", expected, err)
 	}
 }
 

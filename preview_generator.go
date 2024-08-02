@@ -53,6 +53,7 @@ func (p *PreviewGenerator) shouldRegenerateFor(itemID string) bool {
 
 func (p *PreviewGenerator) Start() func() {
 	stop := make(chan struct{})
+
 	commands, err := p.Commands.After(0)
 	if err != nil {
 		p.Logger.Printf("failed to fetch commands: %v", err)

@@ -46,7 +46,7 @@ func (s *Shell) Signup(params []string) {
 	}
 	signup := &SignUpUser{
 		Username:     username,
-		PasswordHash: passwordHash.String(),
+		PasswordHash: *passwordHash,
 		CreatedAt:    s.CurrentTime(),
 	}
 	if err := s.App.HandleCommand(signup); err != nil {
@@ -68,7 +68,7 @@ func (s *Shell) Login(params []string) {
 	}
 	login := &LogInUser{
 		Username:     username,
-		PasswordHash: q.PasswordHash.String(),
+		PasswordHash: *q.PasswordHash,
 		AttemptedAt:  s.CurrentTime(),
 		SessionID:    s.NewID(),
 	}
