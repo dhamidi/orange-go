@@ -13,7 +13,8 @@ import (
 )
 
 func TimeLabel(t time.Time) g.Node {
-	return Time(DateTime(t.Format(time.RFC3339)),
+	return Time(
+		DateTime(t.Format(time.RFC3339)),
 		g.Text(t.Format("2006-01-02 15:04:05")),
 	)
 }

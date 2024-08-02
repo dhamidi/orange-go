@@ -52,7 +52,7 @@ func CommentLink(itemID string) g.Node {
 		hx.Get("/comment?item_id="+itemID),
 		hx.Swap("outerHTML"),
 		Href("/item?id="+itemID),
-		Span(Class("text-xs font-mono"), g.Text("[reply]")),
+		Span(Class("text-xs mx-1 font-bold font-mono"), g.Text("[reply]")),
 	)
 }
 
@@ -89,9 +89,12 @@ func CommentWithChildren(c Comment) g.Node {
 
 func CommentBlock(c Comment) g.Node {
 	return Div(
-		Class("flex flex-col space-y-2 border-l-2 mt-1 pl-2 border-orange-700"),
-		P(Class("font-mono text-sm"), g.Textf("%s at ", c.CommentAuthor()), TimeLabel(c.WrittenAt())),
-		P(Class("prose-lg prose-stone"), g.Text(c.CommentContent())),
-		CommentLink(c.CommentableID()),
+		Class("flex flex-col text-xs font-mono border-l-2 mt-1 pl-2 border-orange-700"),
+		P(Class("text-xs"),
+			g.Textf("%s at ", c.CommentAuthor()),
+			TimeLabel(c.WrittenAt()),
+			CommentLink(c.CommentableID()),
+		),
+		P(Class("prose text-xs my-1 prose-stone"), g.Text(c.CommentContent())),
 	)
 }
