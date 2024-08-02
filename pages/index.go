@@ -78,7 +78,6 @@ func SubmissionList(submissions []*Submission) g.Node {
 	return Container(
 		hx.Get("/"),
 		hx.Trigger("every 1s"),
-		hx.Target("body"),
 		hx.Swap("outerHTML"),
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
@@ -120,10 +119,12 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			Script(Src("https://cdn.tailwindcss.com?plugins=forms,typography")),
 			Script(Src("https://unpkg.com/htmx.org@2.0.1")),
+			Script(Src("https://unpkg.com/htmx-ext-sse@2.2.1/sse.js")),
 		},
 		Body: []g.Node{
 			Class("m-0 flex min-h-screen flex-col"),
 			Navbar(path, context),
+			NotificationBar(),
 			Main(Class("flex-auto"), body),
 			PageFooter(),
 		},
@@ -135,8 +136,18 @@ type PageLink struct {
 	Name string
 }
 
+func NotificationBar() g.Node {
+	return Div(
+		hx.Ext("sse"),
+		g.Attr("sse-connect", "/notify"),
+		g.Attr("sse-swap", "notify"),
+		Class("min-h-8 bg-amber-200 mb-4 p-2 text-sm text-center font-mono"),
+		g.Text("Notifications will appear here"),
+	)
+}
+
 func Navbar(currentPath string, context *PageData) g.Node {
-	return Nav(Class("bg-orange-500 mb-4"),
+	return Nav(Class("bg-orange-500"),
 		Container(
 			Div(Class("flex relative items-center min-h-16"),
 				Span(Class("text-white font-bold p-2"), g.Text("The Orange Website")),

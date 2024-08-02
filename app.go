@@ -50,7 +50,7 @@ func (app *App) Replay(skipErrors bool) error {
 				continue
 			}
 			if err != nil {
-				fmt.Errorf("failed to replay command: %w", err)
+				fmt.Printf("failed to replay command: %w", err)
 				if !skipErrors {
 					return err
 				}

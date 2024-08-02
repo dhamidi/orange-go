@@ -35,5 +35,11 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			CanVote:        !submission.ViewerHasVoted,
 		})
 	}
+
+	if isHX(req) {
+		pages.SubmissionList(templateData).Render(w)
+		return
+	}
+
 	_ = pages.IndexPage(req.URL.Path, templateData, web.PageData(req)).Render(w)
 }

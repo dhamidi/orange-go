@@ -7,9 +7,10 @@ import (
 )
 
 type PlatformConfig struct {
-	ContentStore *url.URL
-	AuthStore    *url.URL
-	CommandLog   *url.URL
+	SkipErrorsDuringReplay bool
+	ContentStore           *url.URL
+	AuthStore              *url.URL
+	CommandLog             *url.URL
 }
 
 func parseURL(u, field string) *url.URL {
@@ -33,9 +34,10 @@ func toFilePath(u *url.URL) string {
 
 func DefaultPlatformConfig() *PlatformConfig {
 	return &PlatformConfig{
-		ContentStore: parseURL("memory://", "ContentStore"),
-		AuthStore:    parseURL("memory://", "AuthStore"),
-		CommandLog:   parseURL("file:///commands.db", "CommandLog"),
+		SkipErrorsDuringReplay: false,
+		ContentStore:           parseURL("memory://", "ContentStore"),
+		AuthStore:              parseURL("memory://", "AuthStore"),
+		CommandLog:             parseURL("file:///commands.db", "CommandLog"),
 	}
 }
 
@@ -55,6 +57,9 @@ func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 		}
 		*fields[i] = parseURL(newURL, names[i])
 	}
+
+	config.SkipErrorsDuringReplay = getenv("ORANGE_SKIP_ERRORS") == "true"
+
 	return config
 }
 

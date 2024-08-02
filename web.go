@@ -45,6 +45,7 @@ func NewWebApp(app *App) *WebApp {
 func (web *WebApp) registerRoutes() {
 	staticFiles, _ := fs.Sub(embeddedStaticFiles, "static")
 	routes := web.mux
+	routes.HandleFunc("/notify", web.DoNotify)
 	routes.HandleFunc("/comment", web.DoComment)
 	routes.HandleFunc("/item", web.PageItem)
 	routes.HandleFunc("/upvote", web.DoUpvote)
