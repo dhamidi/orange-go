@@ -1,5 +1,11 @@
 package main
 
+import "errors"
+
+var (
+	ErrSessionNotFound = errors.New("session not found")
+)
+
 type FindSession struct {
 	ID      string
 	Session *Session

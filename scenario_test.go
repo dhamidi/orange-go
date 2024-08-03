@@ -85,6 +85,15 @@ func (t *TestContext) findPasswordHash(username, password string) (*PasswordHash
 	return q.PasswordHash, nil
 }
 
+func (t *TestContext) findUserByEmail(email string) (*User, error) {
+	t.t.Helper()
+	q := NewFindUserByEmail(email)
+	if err := t.App.HandleQuery(q); err != nil {
+		return nil, err
+	}
+	return q.User, nil
+}
+
 func (t *TestContext) setUsernamePolicy(minLength, maxLength int) Command {
 	return &ChangeUsernamePolicy{
 		MinLength: minLength,
@@ -97,6 +106,14 @@ func (t *TestContext) forbidUsername(usernames ...string) Command {
 		MinLength: 0,
 		MaxLength: 100,
 		Blacklist: usernames,
+	}
+}
+
+func (t *TestContext) linkVerifiedEmailToUser(username string, email string) Command {
+	return &LinkVerifiedEmailToUser{
+		Username: username,
+		Email:    email,
+		LinkedAt: time.Now(),
 	}
 }
 

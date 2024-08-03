@@ -44,3 +44,26 @@ func Test_UsernamePolicy_allows_excluding_names(t *testing.T) {
 	scenario.mustFailWith(scenario.signup("guest", "safe-password"), ErrUsernameNotAllowed)
 	scenario.must(scenario.signup("regular-user", "safe-password"))
 }
+
+func Test_LinkVerifiedEmailToUser_UpdatesTheUserObject(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	user, err := scenario.findUserByEmail("admin@example.com")
+	if err != nil {
+		t.Fatalf("failed to find user by email: %s", err)
+	}
+
+	if user.VerifiedEmail != "admin@example.com" {
+		t.Fatalf("expected verified email to be %q, got %q", "admin@example.com", user.VerifiedEmail)
+	}
+}
+
+func Test_FindUserByEmail_ReturnsError_WhenEmailIsNotLinked(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	_, err := scenario.findUserByEmail("admin@example.com")
+	if !errors.Is(err, ErrUserNotFound) {
+		t.Fatalf("expected %s, got %s", ErrUserNotFound, err)
+	}
+}

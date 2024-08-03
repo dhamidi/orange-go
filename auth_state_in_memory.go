@@ -47,3 +47,12 @@ func (state *InMemoryAuthState) GetPolicy(policy *UsernamePolicy) error {
 	*policy = *state.UsernamePolicy
 	return nil
 }
+
+func (state *InMemoryAuthState) FindUserByEmail(email string) (*User, error) {
+	for _, user := range state.Users {
+		if user.VerifiedEmail == email {
+			return user, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}

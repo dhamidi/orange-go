@@ -1,7 +1,12 @@
 package main
 
 import (
+	"errors"
 	"time"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type AuthState interface {
@@ -9,13 +14,15 @@ type AuthState interface {
 	PutPolicy(policy *UsernamePolicy) error
 	SetUser(user *User) error
 	FindUser(username string) (*User, error)
+	FindUserByEmail(username string) (*User, error)
 	FindSession(sessionID string) (*Session, error)
 	SetSession(session *Session) error
 }
 
 type User struct {
-	Username     string
-	PasswordHash string
+	Username      string
+	PasswordHash  string
+	VerifiedEmail string
 }
 
 type Session struct {
@@ -67,6 +74,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleLogInUser(cmd)
 	case *ChangeUsernamePolicy:
 		return self.handleChangeUsernamePolicy(cmd)
+	case *LinkVerifiedEmailToUser:
+		return self.linkVerifiedEmailToUser(cmd)
 	}
 	return ErrCommandNotAccepted
 }
@@ -79,6 +88,8 @@ func (self *Auth) HandleQuery(query Query) error {
 		return self.FindUserBySessionID(query)
 	case *FindUserPasswordHash:
 		return self.findUserPasswordHash(query)
+	case *FindUserByEmail:
+		return self.findUserByEmail(query)
 	default:
 		return ErrQueryNotAccepted
 	}
