@@ -76,27 +76,46 @@ func (s *Shell) Login(params Parameters) (string, error) {
 	return login.SessionID, nil
 }
 
-func (s *Shell) FindSession(sessionID string) {
-	q := NewFindSessionQuery(sessionID)
-	if err := s.App.HandleQuery(q); err != nil {
-		s.Info("failed to find session %q: %s\n", sessionID, err)
-		return
+func (s *Shell) LinkVerifiedEmailToUser(params Parameters) error {
+	username := params.Get("username")
+	email := params.Get("email")
+	link := &LinkVerifiedEmailToUser{
+		Username: username,
+		Email:    email,
+		LinkedAt: s.CurrentTime(),
 	}
-	s.Info("%+v\n", q.Session)
+	if err := s.App.HandleCommand(link); err != nil {
+		return fmt.Errorf("link-verified-email-to-user: %w\n", err)
+	}
+	return nil
 }
 
-func (s *Shell) List(params []string) {
+func (s *Shell) FindSession(params Parameters) (*Session, error) {
+	sessionID := params.Get("sessionID")
+	q := NewFindSessionQuery(sessionID)
+	if err := s.App.HandleQuery(q); err != nil {
+		return nil, fmt.Errorf("find-session: failed to find session %q: %w\n", sessionID, err)
+	}
+	if q.Session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return q.Session, nil
+}
+
+func (s *Shell) List(params Parameters, out io.Writer) error {
 	after := 0
-	if len(params) > 0 {
-		i, err := strconv.Atoi(params[0])
+	if n := params.Get("after"); n != "" {
+		i, err := strconv.Atoi(n)
 		if err == nil {
 			after = i
+		} else {
+			return fmt.Errorf("list: %w", err)
 		}
 	}
 	log := s.App.Commands
 	commands, err := log.After(after)
 	if err != nil {
-		s.Info("failed to list commands: %s\n", err)
+		return fmt.Errorf("list: %w", err)
 	}
 
 	formatFieldValue := func(v reflect.Value) string {
@@ -133,8 +152,9 @@ func (s *Shell) List(params []string) {
 	}
 
 	for command := range commands {
-		s.Info("%3d %20s %s\n", command.ID, command.Message.CommandName(), formatPayload(command.Message))
+		fmt.Fprintf(out, "%3d %20s %s\n", command.ID, command.Message.CommandName(), formatPayload(command.Message))
 	}
+	return nil
 }
 
 func (s *Shell) Upvote(params []string) {

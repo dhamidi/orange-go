@@ -16,6 +16,12 @@ func p(i int) string {
 	return ""
 }
 
+func pv(i int, key string, values *url.Values) {
+	if len(os.Args) > i {
+		values.Set(key, os.Args[i])
+	}
+}
+
 func run(err error, usage ...string) {
 	if err != nil {
 		if len(usage) > 0 {
@@ -56,6 +62,11 @@ func main() {
 		values.Set("username", p(2))
 		values.Set("password", p(3))
 		run(shell.Signup(values), "signup <username> <password>")
+	case "link-email":
+		values := url.Values{}
+		values.Set("username", p(2))
+		values.Set("email", p(3))
+		run(shell.LinkVerifiedEmailToUser(values), "link-email <username> <email>")
 	case "log-in":
 		values := url.Values{}
 		values.Set("username", p(2))
@@ -70,13 +81,15 @@ func main() {
 	case "upvote":
 		shell.Upvote(os.Args[2:])
 	case "find-session":
-		sessionID := ""
-		if len(os.Args) > 2 {
-			sessionID = os.Args[2]
-		}
-		shell.FindSession(sessionID)
+		values := url.Values{}
+		values.Set("sessionID", p(2))
+		session, err := shell.FindSession(values)
+		run(err, "find-session <session-id>")
+		fmt.Printf("%s", session.ID)
 	case "log":
-		shell.List(os.Args[2:])
+		values := url.Values{}
+		pv(2, "after", &values)
+		run(shell.List(values, os.Stdout))
 	case "serve":
 		web := NewWebApp(app)
 		conninfo := ":8080"

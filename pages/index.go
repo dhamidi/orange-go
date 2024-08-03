@@ -159,8 +159,7 @@ func Navbar(currentPath string, context *PageData) g.Node {
 				g.Iff(context.CurrentUser != nil,
 					func() g.Node {
 						return g.Group([]g.Node{
-							Span(Class("prose mx-1 text-center inline-block"),
-								g.Text(context.CurrentUser.Username)),
+							NavbarLink("/me", context.CurrentUser.Username, currentPath == "/me"),
 							NavbarLink("/logout", "Log out", false),
 						})
 					}),

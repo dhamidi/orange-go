@@ -52,6 +52,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/submit", web.PageSubmit)
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
+	routes.HandleFunc("/me", web.PageMe)
 	routes.HandleFunc("/admin/events", web.PageEventLog)
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
 	routes.HandleFunc("/", web.PageIndex)
@@ -110,6 +111,11 @@ func (web *WebApp) LogInFirst(w http.ResponseWriter, req *http.Request) {
 		referer.Path = backTo.Path
 		referer.RawQuery = backTo.RawQuery
 	}
+
+	if referer.Path == req.URL.Path {
+		referer.Path = "/"
+	}
+
 	redirectTo := &url.URL{
 		Path:     "/login",
 		RawQuery: url.Values{"back_to": []string{referer.String()}}.Encode(),
@@ -119,6 +125,6 @@ func (web *WebApp) LogInFirst(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("HX-Redirect", redirectTo.String())
 		w.WriteHeader(http.StatusNoContent)
 	} else {
-		http.Redirect(w, req, req.URL.String(), http.StatusSeeOther)
+		http.Redirect(w, req, redirectTo.String(), http.StatusSeeOther)
 	}
 }

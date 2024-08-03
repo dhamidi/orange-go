@@ -67,3 +67,8 @@ func Test_FindUserByEmail_ReturnsError_WhenEmailIsNotLinked(t *testing.T) {
 		t.Fatalf("expected %s, got %s", ErrUserNotFound, err)
 	}
 }
+
+func Test_LinkVerifiedEmailToUser_ReturnsError_WhenUserDoesNotExist(t *testing.T) {
+	scenario := setup(t)
+	scenario.mustFailWith(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"), ErrUserNotFound)
+}
