@@ -20,6 +20,7 @@ var embeddedStaticFiles embed.FS
 
 type WebApp struct {
 	app    *App
+	shell  *Shell
 	mux    *http.ServeMux
 	logger *log.Logger
 
@@ -28,9 +29,10 @@ type WebApp struct {
 	CurrentTime        func() time.Time
 }
 
-func NewWebApp(app *App) *WebApp {
+func NewWebApp(app *App, shell *Shell) *WebApp {
 	web := &WebApp{
 		app:                app,
+		shell:              shell,
 		mux:                http.NewServeMux(),
 		logger:             log.New(os.Stdout, "[web]", log.LstdFlags),
 		SessionIDGenerator: uuid.NewString,

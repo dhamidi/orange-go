@@ -18,25 +18,19 @@ func (web *WebApp) PageSubmit(w http.ResponseWriter, req *http.Request) {
 		form := pages.NewFormState()
 		pages.SubmitPage(req.URL.Path, form, web.PageData(req)).Render(w)
 	case "POST":
-		web.handleSubmission(w, req, currentUser)
+		web.handleSubmission(w, req)
 	}
 }
 
-func (web *WebApp) handleSubmission(w http.ResponseWriter, req *http.Request, currentUser *User) {
-	now := web.CurrentTime()
+func (web *WebApp) handleSubmission(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
 	pageData := web.PageData(req)
-	submitLink := &PostLink{
-		ItemID:      web.ItemIDGenerator(),
-		Submitter:   currentUser.Username,
-		SubmittedAt: now,
-		Title:       req.FormValue("title"),
-		Url:         req.FormValue("url"),
-	}
-
-	err := web.app.HandleCommand(submitLink)
+	sessionID, _ := req.Cookie("session_id")
+	req.Form.Set("sessionID", sessionID.Value)
+	err := web.shell.Submit(req.Form)
 	form := pages.NewFormState()
-	form.SetValue("title", submitLink.Title)
-	form.SetValue("url", submitLink.Url)
+	form.SetValue("title", req.Form.Get("title"))
+	form.SetValue("url", req.Form.Get("url"))
 	if errors.Is(err, ErrEmptyTitle) {
 		form.AddError("title", ErrEmptyTitle.Error())
 	}

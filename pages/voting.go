@@ -19,7 +19,7 @@ func UpvoteButton(itemID string) g.Node {
 		Method("POST"),
 		Input(
 			Type("hidden"),
-			Name("item_id"),
+			Name("itemID"),
 			Value(itemID),
 		),
 		Button(

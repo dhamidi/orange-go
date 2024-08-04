@@ -49,7 +49,7 @@ func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
 
 func CommentLink(itemID string) g.Node {
 	return A(
-		hx.Get("/comment?item_id="+itemID),
+		hx.Get("/comment?itemID="+itemID),
 		hx.Swap("outerHTML"),
 		Href("/item?id="+itemID),
 		Span(Class("text-xs mx-1 font-bold font-mono"), g.Text("[reply]")),
@@ -63,8 +63,8 @@ func CommentForm(itemID string, state *FormState) g.Node {
 		Action("/comment"), Method("POST"),
 		Div(
 			Class("flex flex-row space-around"),
-			Input(Type("hidden"), Name("item_id"), Value(itemID)),
-			InlineText("content", state),
+			Input(Type("hidden"), Name("itemID"), Value(itemID)),
+			InlineText("text", state),
 			InlineSubmitButton("Reply"),
 		),
 	)

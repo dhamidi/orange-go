@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"orange/pages"
 )
@@ -10,18 +11,17 @@ func (web *WebApp) DoUpvote(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
 	}
-	currentUser := web.CurrentUser(req)
-	itemID := req.FormValue("item_id")
-	if currentUser == nil {
+	req.ParseForm()
+	sessionID, _ := req.Cookie("session_id")
+	itemID := req.Form.Get("itemID")
+	req.Form.Set("sessionID", sessionID.Value)
+
+	err := web.shell.Upvote(req.Form)
+	if errors.Is(err, ErrSessionNotFound) {
 		pages.UpvoteButton(itemID).Render(w)
 		return
 	}
-	cmd := &UpvoteSubmission{
-		Voter:   currentUser.Username,
-		VotedAt: web.CurrentTime(),
-		ItemID:  itemID,
-	}
-	err := web.app.HandleCommand(cmd)
+
 	if err == ErrAlreadyVoted {
 		pages.VotedIcon().Render(w)
 		return

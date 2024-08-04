@@ -27,31 +27,13 @@ func (web *WebApp) PageLogin(w http.ResponseWriter, req *http.Request) {
 }
 
 func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
-	sessionID := web.SessionIDGenerator()
-	now := web.CurrentTime()
-	q := NewFindUserPasswordHash(req.FormValue("username"), req.FormValue("password"))
-	query := url.Values{}
-	query.Set("error", "invalid-credentials")
-	query.Set("username", req.FormValue("username"))
-	if err := web.app.HandleQuery(q); err != nil || q.PasswordHash == nil {
+	req.ParseForm()
+	sessionID, err := web.shell.Login(req.Form)
+	if errors.Is(err, ErrInvalidCredentials) || errors.Is(err, ErrSessionNotFound) {
+		query := url.Values{}
+		query.Set("error", "invalid-credentials")
+		query.Set("username", req.FormValue("username"))
 		http.Redirect(w, req, "/login?"+query.Encode(), http.StatusSeeOther)
-		return
-	}
-
-	logIn := &LogInUser{
-		Username:     req.FormValue("username"),
-		PasswordHash: *q.PasswordHash,
-		AttemptedAt:  now,
-		SessionID:    sessionID,
-	}
-
-	err := web.app.HandleCommand(logIn)
-	if errors.Is(err, ErrInvalidCredentials) {
-		http.Redirect(w, req, "/login?"+query.Encode(), http.StatusSeeOther)
-		return
-	}
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 

@@ -1,20 +1,15 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"orange/pages"
 )
 
 func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
-	currentUser := web.CurrentUser(req)
-	itemID := req.FormValue("item_id")
-	if currentUser == nil {
-		web.LogInFirst(w, req)
-		return
-	}
-
+	req.ParseForm()
 	if req.Method == "GET" && isHX(req) {
-		pages.CommentForm(req.FormValue("item_id"), pages.NewFormState()).Render(w)
+		pages.CommentForm(req.FormValue("itemID"), pages.NewFormState()).Render(w)
 		return
 	}
 	if req.Method != "POST" {
@@ -23,17 +18,19 @@ func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cmd := &PostComment{
-		ParentID: NewTreeID(itemID),
-		Author:   currentUser.Username,
-		PostedAt: web.CurrentTime(),
-		Content:  req.FormValue("content"),
-	}
+	sessionID, _ := req.Cookie("session_id")
+	itemID := req.FormValue("itemID")
+	req.Form.Set("sessionID", sessionID.Value)
 
-	state := pages.NewFormState()
-	if err := web.app.HandleCommand(cmd); err != nil {
-		state.SetValue("content", req.FormValue("content"))
-		state.AddError("content", err.Error())
+	err := web.shell.Comment(req.Form)
+	if errors.Is(err, ErrSessionNotFound) {
+		web.LogInFirst(w, req)
+		return
+	}
+	if err != nil {
+		state := pages.NewFormState()
+		state.SetValue("text", req.FormValue("text"))
+		state.AddError("text", err.Error())
 		if isHX(req) {
 			pages.CommentForm(itemID, state).Render(w)
 			return

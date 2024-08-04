@@ -96,7 +96,7 @@ func main() {
 		pv(2, "after", &values)
 		run(shell.List(values, os.Stdout))
 	case "serve":
-		web := NewWebApp(app)
+		web := NewWebApp(app, shell)
 		conninfo := ":8080"
 		if len(os.Args) > 2 {
 			conninfo = os.Args[2]
