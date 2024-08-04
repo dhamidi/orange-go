@@ -157,20 +157,15 @@ func (s *Shell) List(params Parameters, out io.Writer) error {
 	return nil
 }
 
-func (s *Shell) Upvote(params []string) {
-	if len(params) < 2 {
-		s.Info("usage: upvote <session-id> <item-id>\n")
-		return
-	}
-	sessionID, itemID := params[0], params[1]
+func (s *Shell) Upvote(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
 	q := NewFindSessionQuery(sessionID)
 	if err := s.App.HandleQuery(q); err != nil {
-		s.Info("failed to find session %q: %s\n", sessionID, err)
-		return
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
 	}
 	if q.Session == nil {
-		s.Info("You are not logged in\n")
-		return
+		return ErrSessionNotFound
 	}
 	submit := &UpvoteSubmission{
 		ItemID:  itemID,
@@ -178,24 +173,21 @@ func (s *Shell) Upvote(params []string) {
 		VotedAt: s.CurrentTime(),
 	}
 	if err := s.App.HandleCommand(submit); err != nil {
-		s.Info("failed to upvote: %s\n", err)
+		return fmt.Errorf("upvote: %w", err)
 	}
+	return nil
 }
 
-func (s *Shell) Submit(params []string) {
-	if len(params) < 3 {
-		s.Info("usage: submit <session-id> <title> <url>\n")
-		return
-	}
-	sessionID, title, url := params[0], params[1], params[2]
+func (s *Shell) Submit(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	title := params.Get("title")
+	url := params.Get("url")
 	q := NewFindSessionQuery(sessionID)
 	if err := s.App.HandleQuery(q); err != nil {
-		s.Info("failed to find session %q: %s\n", sessionID, err)
-		return
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
 	}
 	if q.Session == nil {
-		s.Info("You are not logged in\n")
-		return
+		return ErrSessionNotFound
 	}
 	submit := &PostLink{
 		ItemID:      s.NewID(),
@@ -205,24 +197,22 @@ func (s *Shell) Submit(params []string) {
 		SubmittedAt: s.CurrentTime(),
 	}
 	if err := s.App.HandleCommand(submit); err != nil {
-		s.Info("failed to submit content: %s\n", err)
+		return fmt.Errorf("failed to submit content: %w\n", err)
 	}
+	return nil
 }
 
-func (s *Shell) Comment(params []string) {
-	if len(params) < 3 {
-		s.Info("usage: comment <session-id> <item-id> <text>\n")
-		return
-	}
-	sessionID, itemID, text := params[0], params[1], params[2]
+func (s *Shell) Comment(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
+	text := params.Get("text")
+
 	q := NewFindSessionQuery(sessionID)
 	if err := s.App.HandleQuery(q); err != nil {
-		s.Info("failed to find session %q: %s\n", sessionID, err)
-		return
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
 	}
 	if q.Session == nil {
-		s.Info("You are not logged in\n")
-		return
+		return ErrSessionNotFound
 	}
 	commentOn := &PostComment{
 		ParentID: NewTreeID(itemID),
@@ -231,6 +221,7 @@ func (s *Shell) Comment(params []string) {
 		PostedAt: s.CurrentTime(),
 	}
 	if err := s.App.HandleCommand(commentOn); err != nil {
-		s.Info("failed to post comment: %s\n", err)
+		return fmt.Errorf("failed to post comment: %w\n", err)
 	}
+	return nil
 }
