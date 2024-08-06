@@ -80,6 +80,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.linkVerifiedEmailToUser(cmd)
 	case *SetAdminUsers:
 		return self.handleSetAdminUsers(cmd)
+	case *AuthMagicLinkLogin:
+		return self.handleAuthMagicLinkLogin(cmd)
 	}
 	return ErrCommandNotAccepted
 }
