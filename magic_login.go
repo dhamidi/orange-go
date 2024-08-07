@@ -18,7 +18,7 @@ func NewMagicLoginController(app *App, commands CommandLog, logger *log.Logger) 
 
 func (m *MagicLoginController) HandleCommand(command Command) error {
 	switch c := command.(type) {
-	case *AuthMagicLinkLogin:
+	case *RequestMagicLinkLogin:
 		return m.handleMagicLogin(c)
 	default:
 		return ErrCommandNotAccepted
@@ -29,6 +29,6 @@ func (m *MagicLoginController) Start() func() {
 	panic("implement me")
 }
 
-func (m *MagicLoginController) handleMagicLogin(c *AuthMagicLinkLogin) error {
+func (m *MagicLoginController) handleMagicLogin(c *RequestMagicLinkLogin) error {
 	panic("implement me")
 }

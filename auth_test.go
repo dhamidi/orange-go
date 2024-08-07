@@ -72,3 +72,41 @@ func Test_LinkVerifiedEmailToUser_ReturnsError_WhenUserDoesNotExist(t *testing.T
 	scenario := setup(t)
 	scenario.mustFailWith(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"), ErrUserNotFound)
 }
+
+func Test_RequestMagicLinkLogin_ReturnsError_WhenUserDoesNotExist(t *testing.T) {
+	scenario := setup(t)
+	scenario.mustFailWith(scenario.requestMagicLinkLogin("test@gmail.com", "magic-string"), ErrUserNotFound)
+}
+
+func Test_RequestMagicLinkLogin_UpdatesMagic(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	scenario.must(scenario.requestMagicLinkLogin("admin@example.com", "magic-string"))
+
+	user, err := scenario.findUserByEmail("admin@example.com")
+	if err != nil {
+		t.Fatalf("failed to find user by email: %s", err)
+	}
+
+	if user.Magic != "magic-string" {
+		t.Fatalf("expected magic to be %q, got %q", "magic-string", user.Magic)
+	}
+}
+
+func Test_RequestMagicLinkLogin_UpdatesMagic_IfUserAlreadyHasMagic(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	scenario.must(scenario.requestMagicLinkLogin("admin@example.com", "magic-string"))
+	scenario.must(scenario.requestMagicLinkLogin("admin@example.com", "super-magic-string"))
+
+	user, err := scenario.findUserByEmail("admin@example.com")
+	if err != nil {
+		t.Fatalf("failed to find user by email: %s", err)
+	}
+
+	if user.Magic != "super-magic-string" {
+		t.Fatalf("expected magic to be %q, got %q", "super-magic-string", user.Magic)
+	}
+}

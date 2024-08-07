@@ -122,6 +122,14 @@ func (t *TestContext) linkVerifiedEmailToUser(username string, email string) Com
 	}
 }
 
+func (t *TestContext) requestMagicLinkLogin(email, magic string) Command {
+	return &RequestMagicLinkLogin{
+		Email:       email,
+		Magic:       magic,
+		RequestedAt: time.Now(),
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }

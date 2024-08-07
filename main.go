@@ -73,6 +73,11 @@ func main() {
 		sessionID, err := shell.Login(values)
 		run(err, "login <username> <password>")
 		fmt.Printf("%s\n", sessionID)
+	case "request-magic-link":
+		pv(2, "email", &values)
+		magic, err := shell.RequestMagicLinkLogin(values)
+		run(err, "request-magic-link <email>")
+		fmt.Printf("%s\n", magic)
 	case "comment":
 		pv(2, "sessionID", &values)
 		pv(3, "itemID", &values)

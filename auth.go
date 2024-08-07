@@ -25,6 +25,7 @@ type User struct {
 	Username      string
 	PasswordHash  string
 	VerifiedEmail string
+	Magic         string
 }
 
 type Session struct {
@@ -80,6 +81,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.linkVerifiedEmailToUser(cmd)
 	case *SetAdminUsers:
 		return self.handleSetAdminUsers(cmd)
+	case *RequestMagicLinkLogin:
+		return self.handleRequestMagicLinkLogin(cmd)
 	case *AuthMagicLinkLogin:
 		return self.handleAuthMagicLinkLogin(cmd)
 	}
