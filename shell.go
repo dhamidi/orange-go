@@ -29,6 +29,18 @@ type Parameters interface {
 	Get(key string) string
 }
 
+func GetAllValues(p Parameters, key string) []string {
+	values := []string{}
+	for i := 0; true; i++ {
+		value := p.Get(fmt.Sprintf("%s[%d]", key, i))
+		if value == "" {
+			return values
+		}
+		values = append(values, value)
+	}
+	return values
+}
+
 func (s *Shell) Signup(params Parameters) error {
 	username, password := params.Get("username"), params.Get("password")
 
@@ -93,6 +105,43 @@ func (s *Shell) FindSession(params Parameters) (*Session, error) {
 		return nil, ErrSessionNotFound
 	}
 	return q.Session, nil
+}
+
+func (s *Shell) UnskipCommands(params Parameters) error {
+	ids := GetAllValues(params, "id")
+	reviser, ok := s.App.Commands.(CommandReviser)
+	if !ok {
+		return fmt.Errorf("Command log type %T does not support revision", s.App.Commands)
+	}
+	intIDs := []int{}
+	for _, id := range ids {
+		i, err := strconv.Atoi(id)
+		if err != nil {
+			return fmt.Errorf("failed to convert id[%d] %q to int: %w", i, id, err)
+		}
+		intIDs = append(intIDs, i)
+	}
+	reviser.ReviseCommands(intIDs, func(id int) Command { return nil })
+	return nil
+}
+
+func (s *Shell) SkipCommands(params Parameters) error {
+	ids := GetAllValues(params, "id")
+	reviser, ok := s.App.Commands.(CommandReviser)
+	if !ok {
+		return fmt.Errorf("Command log type %T does not support revision", s.App.Commands)
+	}
+	intIDs := []int{}
+	for _, id := range ids {
+		i, err := strconv.Atoi(id)
+		if err != nil {
+			return fmt.Errorf("failed to convert id[%d] %q to int: %w", i, id, err)
+		}
+		intIDs = append(intIDs, i)
+	}
+	skip := new(SkipCommand)
+	reviser.ReviseCommands(intIDs, func(id int) Command { return skip })
+	return nil
 }
 
 func (s *Shell) List(params Parameters, out io.Writer) error {

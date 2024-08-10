@@ -31,6 +31,25 @@ type Command interface {
 	CommandName() string
 }
 
+type SkipCommand struct{}
+
+func (cmd *SkipCommand) CommandName() string { return "SkipCommand" }
+
+type SkipHandler struct{}
+
+func (self *SkipHandler) HandleCommand(cmd Command) error {
+	switch cmd.(type) {
+	case *SkipCommand:
+		return nil
+	default:
+		return ErrCommandNotAccepted
+	}
+}
+
+func init() {
+	DefaultCommandRegistry.Register("SkipCommand", func() Command { return &SkipCommand{} })
+}
+
 type Query interface {
 	QueryName() string
 }
@@ -113,6 +132,10 @@ var DefaultSerializer = NewJSONSerializer(DefaultCommandRegistry)
 type CommandLog interface {
 	Append(command Command) error
 	After(id int) (iter.Seq[*PersistedCommand], error)
+}
+
+type CommandReviser interface {
+	ReviseCommands(id []int, as func(id int) Command) error
 }
 
 // NullCommand log implements an empty log that does not store any messages nor return any.

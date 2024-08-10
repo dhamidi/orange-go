@@ -18,7 +18,7 @@ func NewApp(log CommandLog) *App {
 	return &App{
 		version:         0,
 		Commands:        log,
-		commandHandlers: []CommandHandler{},
+		commandHandlers: []CommandHandler{&SkipHandler{}},
 		queryHandlers:   []QueryHandler{},
 	}
 }

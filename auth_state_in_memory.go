@@ -40,7 +40,7 @@ func (state *InMemoryAuthState) GetPolicy(policy *UsernamePolicy) error {
 	if state.UsernamePolicy == nil {
 		*policy = UsernamePolicy{
 			MinLength: 0,
-			MaxLength: 100,
+			MaxLength: 20,
 		}
 		return nil
 	}

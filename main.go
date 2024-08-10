@@ -95,6 +95,16 @@ func main() {
 	case "log":
 		pv(2, "after", &values)
 		run(shell.List(values, os.Stdout))
+	case "unskip-commands":
+		for i, arg := range os.Args[2:] {
+			values.Set(fmt.Sprintf("id[%d]", i), arg)
+		}
+		run(shell.UnskipCommands(values), "unskip-commands <id>...")
+	case "skip-commands":
+		for i, arg := range os.Args[2:] {
+			values.Set(fmt.Sprintf("id[%d]", i), arg)
+		}
+		run(shell.SkipCommands(values), "skip-commands <id>...")
 	case "serve":
 		web := NewWebApp(app, shell)
 		conninfo := ":8080"
