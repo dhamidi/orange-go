@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -15,7 +14,6 @@ import (
 type Shell struct {
 	CurrentTime func() time.Time
 	NewID       func() string
-	Output      io.Writer
 	App         *App
 }
 
@@ -23,17 +21,12 @@ func NewDefaultShell(app *App) *Shell {
 	return &Shell{
 		CurrentTime: time.Now,
 		NewID:       uuid.NewString,
-		Output:      os.Stdout,
 		App:         app,
 	}
 }
 
 type Parameters interface {
 	Get(key string) string
-}
-
-func (s *Shell) Info(format string, args ...interface{}) {
-	fmt.Fprintf(s.Output, format, args...)
 }
 
 func (s *Shell) Signup(params Parameters) error {
