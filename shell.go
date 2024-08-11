@@ -95,6 +95,24 @@ func (s *Shell) LinkVerifiedEmailToUser(params Parameters) error {
 	return nil
 }
 
+func (s *Shell) SetAdminUsers(params Parameters) error {
+	usernames := GetAllValues(params, "username")
+	setAdmin := &SetAdminUsers{Users: usernames}
+	if err := s.App.HandleCommand(setAdmin); err != nil {
+		return fmt.Errorf("set-admin-users: %w\n", err)
+	}
+	return nil
+}
+
+func (s *Shell) GetUserRoles(params Parameters) ([]UserRole, error) {
+	username := params.Get("username")
+	q := NewGetUserRolesQuery(username)
+	if err := s.App.HandleQuery(q); err != nil {
+		return nil, fmt.Errorf("get-user-roles: failed to get user roles: %w\n", err)
+	}
+	return q.Roles, nil
+}
+
 func (s *Shell) FindSession(params Parameters) (*Session, error) {
 	sessionID := params.Get("sessionID")
 	q := NewFindSessionQuery(sessionID)

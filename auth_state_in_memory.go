@@ -3,14 +3,28 @@ package main
 type InMemoryAuthState struct {
 	UsernamePolicy *UsernamePolicy
 	Users          map[string]*User
+	AdminUsers     map[string]bool
 	Sessions       map[string]*Session
 }
 
 func NewInMemoryAuthState() *InMemoryAuthState {
 	return &InMemoryAuthState{
-		Users:    make(map[string]*User),
-		Sessions: make(map[string]*Session),
+		AdminUsers: make(map[string]bool),
+		Users:      make(map[string]*User),
+		Sessions:   make(map[string]*Session),
 	}
+}
+
+func (state *InMemoryAuthState) SetAdminUsers(users []string) error {
+	state.AdminUsers = make(map[string]bool)
+	for _, user := range users {
+		state.AdminUsers[user] = true
+	}
+	return nil
+}
+
+func (state *InMemoryAuthState) IsAdmin(username string) (bool, error) {
+	return state.AdminUsers[username], nil
 }
 
 func (state *InMemoryAuthState) SetUser(user *User) error {

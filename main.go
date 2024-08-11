@@ -105,6 +105,11 @@ func main() {
 			values.Set(fmt.Sprintf("id[%d]", i), arg)
 		}
 		run(shell.SkipCommands(values), "skip-commands <id>...")
+	case "set-admin-users":
+		for i, arg := range os.Args[2:] {
+			values.Set(fmt.Sprintf("username[%d]", i), arg)
+		}
+		run(shell.SetAdminUsers(values), "set-admin-users <username>...")
 	case "serve":
 		web := NewWebApp(app, shell)
 		conninfo := ":8080"

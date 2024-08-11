@@ -12,6 +12,8 @@ var (
 type AuthState interface {
 	GetPolicy(policy *UsernamePolicy) error
 	PutPolicy(policy *UsernamePolicy) error
+	SetAdminUsers(users []string) error
+	IsAdmin(username string) (bool, error)
 	SetUser(user *User) error
 	FindUser(username string) (*User, error)
 	FindUserByEmail(username string) (*User, error)
@@ -76,6 +78,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleChangeUsernamePolicy(cmd)
 	case *LinkVerifiedEmailToUser:
 		return self.linkVerifiedEmailToUser(cmd)
+	case *SetAdminUsers:
+		return self.handleSetAdminUsers(cmd)
 	}
 	return ErrCommandNotAccepted
 }
@@ -90,6 +94,8 @@ func (self *Auth) HandleQuery(query Query) error {
 		return self.findUserPasswordHash(query)
 	case *FindUserByEmail:
 		return self.findUserByEmail(query)
+	case *GetUserRoles:
+		return self.getUserRoles(query)
 	default:
 		return ErrQueryNotAccepted
 	}

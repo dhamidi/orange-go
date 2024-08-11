@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"orange/pages"
 	"os"
+	"slices"
 	"time"
 
 	"embed"
@@ -55,7 +56,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
 	routes.HandleFunc("/me", web.PageMe)
-	routes.HandleFunc("/admin/events", web.PageEventLog)
+	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
 	routes.HandleFunc("/", web.PageIndex)
 }
@@ -65,6 +66,25 @@ func (web *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	web.app.Replay(true)
 	w.Header().Set("X-T", web.CurrentTime().Format(time.RFC3339))
 	web.mux.ServeHTTP(w, req)
+}
+
+func (web *WebApp) AdminOnly(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		currentUser := web.CurrentUser(req)
+		if currentUser == nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		roles, err := web.shell.GetUserRoles(&url.Values{"username": []string{currentUser.Username}})
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+		if slices.Contains(roles, UserRoleAdmin) {
+			next(w, req)
+		} else {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+	}
 }
 
 func (web *WebApp) CurrentUser(req *http.Request) *User {

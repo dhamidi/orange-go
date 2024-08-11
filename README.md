@@ -74,6 +74,12 @@ disallowing certain usernames.
 
 The default username policy enforces no length minimum, and a maximum of 32 characters.
 
+A set of users can be designated as administrators.
+
+Administrators have access to a set of endpoints under `/admin`,
+which allows the to inspect the state of the system and perform
+certain actions.
+
 **TODO**: allow changing password on behalf of the users.
 
 **TODO**: allow users to reset their password.
