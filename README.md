@@ -89,4 +89,9 @@ A background goroutine fetches OpenGraph data for the URL and stores new submiss
 
 Submissions can be commented on, and upvoted.
 
-**TODO**: make upvotes affect the sorting of submissions
+Upvoted submissions are shown in the order of their score.
+
+Scoring is based on number of upvotes, decaying over time.
+
+Submissions are re-scored every time a new link is submitted or an
+existing one is upvoted.
