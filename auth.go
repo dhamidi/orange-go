@@ -17,6 +17,7 @@ type AuthState interface {
 	SetUser(user *User) error
 	FindUser(username string) (*User, error)
 	FindUserByEmail(username string) (*User, error)
+	FindUserByMagic(magic string) (*User, error)
 	FindSession(sessionID string) (*Session, error)
 	SetSession(session *Session) error
 }
@@ -85,6 +86,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleRequestMagicLinkLogin(cmd)
 	case *AuthMagicLinkLogin:
 		return self.handleAuthMagicLinkLogin(cmd)
+	case *LogInWithMagic:
+		return self.handleLogInUserWithMagic(cmd)
 	}
 	return ErrCommandNotAccepted
 }

@@ -130,6 +130,14 @@ func (t *TestContext) requestMagicLinkLogin(email, magic string) Command {
 	}
 }
 
+func (t *TestContext) loginWithMagic(magic string) Command {
+	return &LogInWithMagic{
+		SessionID:   uuid.NewString(),
+		Magic:       magic,
+		AttemptedAt: time.Now(),
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }
