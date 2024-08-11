@@ -84,8 +84,6 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleSetAdminUsers(cmd)
 	case *RequestMagicLinkLogin:
 		return self.handleRequestMagicLinkLogin(cmd)
-	case *AuthMagicLinkLogin:
-		return self.handleAuthMagicLinkLogin(cmd)
 	case *LogInWithMagic:
 		return self.handleLogInUserWithMagic(cmd)
 	}

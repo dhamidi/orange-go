@@ -1,28 +1,40 @@
 package main
 
 import (
+	"iter"
 	"log"
 	"time"
 )
 
-type MagicLoginController struct {
-	Logger   *log.Logger
-	App      *App
-	Commands CommandLog
+type RequestState struct {
+	Magic       string
+	IsCompleted bool
+	RetriesLeft uint
 }
 
-func NewMagicLoginController(app *App, commands CommandLog, logger *log.Logger) *MagicLoginController {
+type MagicLoginController struct {
+	Logger          *log.Logger
+	App             *App
+	Commands        CommandLog
+	MailClient      MailAgent
+	NumberOfRetries uint
+	PendingRequests map[string]RequestState
+}
+
+func NewMagicLoginController(app *App, commands CommandLog, logger *log.Logger, retries uint) *MagicLoginController {
 	return &MagicLoginController{
-		Logger:   logger,
-		App:      app,
-		Commands: commands,
+		Logger:          logger,
+		App:             app,
+		Commands:        commands,
+		NumberOfRetries: retries,
+		PendingRequests: make(map[string]RequestState),
 	}
 }
 
 func (m *MagicLoginController) HandleCommand(command Command) error {
 	switch c := command.(type) {
 	case *RequestMagicLinkLogin:
-		return m.handleMagicLogin(c)
+		return m.addPendingRequest(c)
 	default:
 		return ErrCommandNotAccepted
 	}
@@ -37,8 +49,11 @@ func (m *MagicLoginController) Start() func() {
 		return func() {}
 	}
 
-	// TODO: weird place
-	for c := range commands {
+	then := time.Now().Add(time.Duration(-1) * time.Hour)
+	// Merge latest requests with pending request ??
+	latestRequests := getRequestsUntil(commands, then)
+
+	for c := range latestRequests {
 		m.HandleCommand(c.Message)
 	}
 
@@ -46,12 +61,8 @@ func (m *MagicLoginController) Start() func() {
 	return func() { close(stop) }
 }
 
-func (m *MagicLoginController) handleMagicLogin(c *RequestMagicLinkLogin) error {
-	panic("implement me")
-}
-
 func (p *MagicLoginController) loop(stop <-chan struct{}) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	tick := ticker.C
 	for {
@@ -59,8 +70,27 @@ func (p *MagicLoginController) loop(stop <-chan struct{}) {
 		case <-stop:
 			return
 		case <-tick:
-			// p.fetchPreviews()
-			panic("implement me")
+			p.handleMagicLogin()
 		}
 	}
+}
+
+func (m *MagicLoginController) addPendingRequest(c *RequestMagicLinkLogin) error {
+	m.PendingRequests[c.Email] = RequestState{
+		Magic:       c.Magic,
+		IsCompleted: false,
+		RetriesLeft: m.NumberOfRetries,
+	}
+	return nil
+}
+
+func (m *MagicLoginController) handleMagicLogin() error {
+	// for email, requestState := range m.PendingRequests {
+
+	// }
+	return nil
+}
+
+func getRequestsUntil(commands iter.Seq[*PersistedCommand], until time.Time) iter.Seq[*PersistedCommand] {
+	panic("implement me")
 }
