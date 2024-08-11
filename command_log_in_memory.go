@@ -35,3 +35,7 @@ func NewInMemoryCommandLog() *InMemoryCommandLog {
 		messages: []*PersistedCommand{},
 	}
 }
+
+func (self *InMemoryCommandLog) Length() (int, error) {
+	return len(self.messages), nil
+}

@@ -69,6 +69,19 @@ func (f *FileCommandLog) Append(command Command) error {
 	return nil
 }
 
+func (f *FileCommandLog) Length() (int, error) {
+	db, err := sql.Open("sqlite3", f.conninfo())
+	if err != nil {
+		return 0, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+	var length int
+	if err := db.QueryRow("SELECT max(id) FROM commands").Scan(&length); err != nil {
+		return 0, fmt.Errorf("failed to query length: %w", err)
+	}
+	return length, nil
+}
+
 func (f *FileCommandLog) After(ID int) (iter.Seq[*PersistedCommand], error) {
 	db, err := sql.Open("sqlite3", f.conninfo())
 	if err != nil {

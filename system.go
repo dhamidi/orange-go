@@ -131,6 +131,7 @@ var DefaultSerializer = NewJSONSerializer(DefaultCommandRegistry)
 
 type CommandLog interface {
 	Append(command Command) error
+	Length() (int, error)
 	After(id int) (iter.Seq[*PersistedCommand], error)
 }
 
@@ -145,3 +146,4 @@ func (l *NullCommandLog) Append(command Command) error { return nil }
 func (l *NullCommandLog) After(id int) (iter.Seq[*PersistedCommand], error) {
 	return func(yield func(c *PersistedCommand) bool) {}, nil
 }
+func (l *NullCommandLog) Length() (int, error) { return 0, nil }
