@@ -1,13 +1,46 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
+	"math"
 	"slices"
+	"time"
 )
 
 type InMemoryContentState struct {
-	Submissions   []*Submission
-	VotesByItemID map[string][]string
+	FrontpageDirty   bool
+	LastSubmissionAt time.Time
+	Submissions      []*Submission
+	VotesByItemID    map[string][]string
+}
+
+func (self *InMemoryContentState) scoreSubmissions() {
+	for _, submission := range self.Submissions {
+		self.score(submission)
+	}
+}
+
+func (self *InMemoryContentState) score(s *Submission) {
+	voteCount := len(self.VotesByItemID[s.ItemID])
+	age := float64(self.LastSubmissionAt.Sub(s.SubmittedAt)) / float64(24*time.Hour)
+	decay := float32(math.Pow(0.9, age))
+	s.Score = float32(voteCount) * decay
+}
+
+func (self *InMemoryContentState) refreshFrontpage() {
+	if !self.FrontpageDirty {
+		return
+	}
+	self.scoreSubmissions()
+	slices.SortFunc(self.Submissions, func(i, j *Submission) int {
+		a, b := i.Score, j.Score
+		if a == b {
+			return j.SubmittedAt.Compare(i.SubmittedAt)
+		}
+		return cmp.Compare(b, a)
+	})
+	self.FrontpageDirty = false
 }
 
 func (self *InMemoryContentState) PutSubmissionPreview(preview *SubmissionPreview) error {
@@ -38,15 +71,10 @@ func (self *InMemoryContentState) GetSubmission(itemID string) (*Submission, err
 
 func (self *InMemoryContentState) PutSubmission(submission *Submission) error {
 	self.Submissions = append(self.Submissions, submission)
-	slices.SortFunc(self.Submissions, func(i, j *Submission) int {
-		if i.SubmittedAt.After(j.SubmittedAt) {
-			return -1
-		} else if i.SubmittedAt.Before(j.SubmittedAt) {
-			return 1
-		} else {
-			return 0
-		}
-	})
+	if submission.SubmittedAt.After(self.LastSubmissionAt) {
+		self.LastSubmissionAt = submission.SubmittedAt
+	}
+	self.FrontpageDirty = true
 	return nil
 }
 
@@ -95,6 +123,7 @@ func (self *InMemoryContentState) TopNSubmissions(n int) ([]*Submission, error) 
 	if n > len(self.Submissions) {
 		n = len(self.Submissions)
 	}
+	self.refreshFrontpage()
 	topN := self.Submissions[:n]
 	for _, s := range topN {
 		s.VoteCount = len(self.VotesByItemID[s.ItemID])
@@ -114,6 +143,7 @@ func (self *InMemoryContentState) RecordVote(vote *Vote) error {
 
 	voters = append(voters, vote.By)
 	self.VotesByItemID[vote.For] = voters
+	self.FrontpageDirty = true
 	return nil
 }
 

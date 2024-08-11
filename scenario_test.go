@@ -26,8 +26,13 @@ func (t *TestContext) upvote(itemID, as string) Command {
 		VotedAt: time.Now(),
 	}
 }
+func (t *TestContext) upvoteN(itemID string, n int) {
+	for i := 0; i < n; i++ {
+		t.must(t.upvote(itemID, fmt.Sprintf("viewer-%d", i)))
+	}
+}
 
-func (t *TestContext) postLink(url, title string) Command {
+func (t *TestContext) postLink(url, title string) *PostLink {
 	itemID := fmt.Sprintf("post-%d", len(t.PostIDs)+1)
 	t.PostIDs = append(t.PostIDs, itemID)
 	return &PostLink{

@@ -23,6 +23,7 @@ type Submission struct {
 	SubmittedAt    time.Time
 	Preview        *SubmissionPreview
 	VoteCount      int
+	Score          float32
 	ViewerHasVoted bool
 	CommentCount   int
 	Comments       []*Comment

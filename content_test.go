@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestUpvoteFailsIfVoterIsMissing(t *testing.T) {
@@ -82,5 +83,63 @@ func Test_OnFrontpage_VotingMultipleTimes(t *testing.T) {
 	upvoted := mustFind(submissions, "Title", "Upvoted")
 	if upvoted.VoteCount != 1 {
 		t.Fatalf("VoteCount is %d, expected %d", upvoted.VoteCount, 1)
+	}
+}
+
+func Test_OnFrontpage_SubmissionsAreSortedByVotes(t *testing.T) {
+	scenario := setup(t)
+	for i := range 10 {
+		scenario.must(scenario.postLink("https://news.ycombinator.com", fmt.Sprintf("%d", i)))
+		scenario.upvoteN(scenario.PostIDs[i], 10-i)
+	}
+
+	submissions := scenario.frontpage()
+	for i, s := range submissions {
+		t.Logf("%d: %s", i, s.Title)
+	}
+	first := mustFind(submissions, "Title", "0")
+	if first.ItemID != submissions[0].ItemID {
+		t.Fatalf("expected first submission to be %q, got %q", "0", submissions[0].Title)
+	}
+}
+
+func Test_OnFrontpage_SubmissionsAreSortedByScores_ThenSubmissionTime(t *testing.T) {
+	scenario := setup(t)
+	for i := range 10 {
+		postLink := scenario.postLink("https://news.ycombinator.com", fmt.Sprintf("%d", i))
+		postLink.SubmittedAt = postLink.SubmittedAt.Add(-time.Duration(10-i) * 24 * time.Hour)
+		scenario.must(postLink)
+	}
+
+	// The oldest submission got 5 upvotes, but votes are multiplied by 0.9 every day.
+	// Since ten days have passed, it will have a score of 5 * 0.9**10 = 1.74.
+	//
+	// The submission three days ago gets 3 upvotes, and will have a higher score.
+	scenario.upvoteN(scenario.PostIDs[0], 5)
+	scenario.upvoteN(scenario.PostIDs[10-3], 3)
+
+	submissions := scenario.frontpage()
+	for _, s := range submissions {
+		t.Logf("votes: %d, score: %.2f: %s %s",
+			s.VoteCount,
+			s.Score,
+			s.Title,
+			s.SubmittedAt.Format(time.DateOnly),
+		)
+	}
+	first := submissions[0]
+	second := submissions[1]
+
+	if f, s := first.Score, second.Score; f < s {
+		t.Fatalf("Expected first score to be higher than second, got %.2f < %.2f", f, s)
+	}
+
+	for i := 2; i < 10; i += 2 {
+		if a, b := submissions[i].SubmittedAt, submissions[i+1].SubmittedAt; b.After(a) {
+			t.Fatalf("submission %d: Expected %s to be before %s",
+				i,
+				b.Format(time.DateOnly),
+				a.Format(time.DateOnly))
+		}
 	}
 }
