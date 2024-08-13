@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/url"
+	"os"
+	"time"
 )
 
 type PlatformConfig struct {
@@ -97,10 +100,17 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	content := NewContent(contentState)
 	authState := config.NewAuthState()
 	auth := NewAuth(authState)
+
 	app := NewApp(commandLog)
 
-	previewGenerator := NewPreviewGenerator(app, commandLog, log.Default())
-	starters := []Starter{previewGenerator}
+	randomNumbers := rand.New(rand.NewSource(time.Now().UnixNano()))
+	emailLogger := log.New(os.Stdout, "[mailer] ", log.LstdFlags)
+	emailSender := NewFlakyEmailSender(&EmailLogger{emailLogger}, 0.95, randomNumbers)
+	mailer := NewMailer(emailSender, emailLogger, app)
+
+	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
+	previewGenerator := NewPreviewGenerator(app, commandLog, previewLogger)
+	starters := []Starter{previewGenerator, mailer}
 
 	MustSetup(commandLog)
 	MustSetup(auth)

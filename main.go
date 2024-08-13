@@ -95,6 +95,17 @@ func main() {
 	case "log":
 		pv(2, "after", &values)
 		run(shell.List(values, os.Stdout))
+	case "queue-email":
+		pv(2, "email", &values)
+		pv(3, "subject", &values)
+		cmd := &QueueEmail{
+			InternalID:   shell.NewID(),
+			Recipients:   values.Get("email"),
+			Subject:      values.Get("subject"),
+			TemplateName: "test",
+			TemplateData: map[string]interface{}{"name": "test"},
+		}
+		run(app.HandleCommand(cmd), "queue-email <email> <subject>")
 	case "unskip-commands":
 		for i, arg := range os.Args[2:] {
 			values.Set(fmt.Sprintf("id[%d]", i), arg)
@@ -116,7 +127,7 @@ func main() {
 		if len(os.Args) > 2 {
 			conninfo = os.Args[2]
 		}
-		fmt.Printf("Replayed events in %s\n", after.Sub(before))
+		web.logger.Printf("Replayed events in %s\n", after.Sub(before))
 		for _, starter := range starters {
 			starter.Start()
 		}

@@ -35,7 +35,7 @@ func NewWebApp(app *App, shell *Shell) *WebApp {
 		app:                app,
 		shell:              shell,
 		mux:                http.NewServeMux(),
-		logger:             log.New(os.Stdout, "[web]", log.LstdFlags),
+		logger:             log.New(os.Stdout, "[web] ", log.LstdFlags),
 		SessionIDGenerator: uuid.NewString,
 		ItemIDGenerator:    uuid.NewString,
 		CurrentTime:        time.Now,
