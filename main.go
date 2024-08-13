@@ -106,6 +106,21 @@ func main() {
 			TemplateData: map[string]interface{}{"name": "test"},
 		}
 		run(app.HandleCommand(cmd), "queue-email <email> <subject>")
+	case "send-welcome-email":
+		pv(2, "username", &values)
+		pv(3, "email", &values)
+		cmd := &QueueEmail{
+			InternalID:   shell.NewID(),
+			Recipients:   values.Get("email"),
+			Subject:      "",
+			TemplateName: "welcome",
+			TemplateData: map[string]interface{}{
+				"name":      values.Get("username"),
+				"username":  values.Get("username"),
+				"login_url": "https://orange.decode.ee/login",
+			},
+		}
+		run(app.HandleCommand(cmd), "send-welcome-email <username> <email>")
 	case "unskip-commands":
 		for i, arg := range os.Args[2:] {
 			values.Set(fmt.Sprintf("id[%d]", i), arg)

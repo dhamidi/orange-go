@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"net/url"
 	"os"
-	"time"
 )
 
 type PlatformConfig struct {
 	SkipErrorsDuringReplay bool
+	EmailSender            *url.URL
 	ContentStore           *url.URL
 	AuthStore              *url.URL
 	CommandLog             *url.URL
@@ -38,6 +37,7 @@ func toFilePath(u *url.URL) string {
 func DefaultPlatformConfig() *PlatformConfig {
 	return &PlatformConfig{
 		SkipErrorsDuringReplay: false,
+		EmailSender:            parseURL("memory://", "EmailSender"),
 		ContentStore:           parseURL("memory://", "ContentStore"),
 		AuthStore:              parseURL("memory://", "AuthStore"),
 		CommandLog:             parseURL("file:///commands.db", "CommandLog"),
@@ -47,23 +47,41 @@ func DefaultPlatformConfig() *PlatformConfig {
 func NewPlatformConfigForTest() *PlatformConfig {
 	config := DefaultPlatformConfig()
 	config.CommandLog = parseURL("memory://", "CommandLog")
+	config.EmailSender = parseURL("memory://", "EmailSender")
 	return config
 }
 func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 	config := DefaultPlatformConfig()
-	fields := []**url.URL{&config.ContentStore, &config.AuthStore, &config.CommandLog}
-	names := []string{"CONTENT_STORE", "AUTH_STORE", "COMMAND_LOG"}
-	for i := range fields {
-		newURL := getenv("ORANGE_" + names[i])
+	fields := map[string]**url.URL{
+		"CONTENT_STORE": &config.ContentStore,
+		"AUTH_STORE":    &config.AuthStore,
+		"COMMAND_LOG":   &config.CommandLog,
+		"EMAIL_SENDER":  &config.EmailSender,
+	}
+	for name, dest := range fields {
+		newURL := getenv("ORANGE_" + name)
 		if newURL == "" {
 			continue
 		}
-		*fields[i] = parseURL(newURL, names[i])
+		*dest = parseURL(newURL, name)
 	}
 
 	config.SkipErrorsDuringReplay = getenv("ORANGE_SKIP_ERRORS") == "true"
 
 	return config
+}
+
+func (c *PlatformConfig) NewEmailSender() EmailSender {
+	if c.EmailSender.Scheme == "memory" {
+		return &EmailLogger{log.New(os.Stdout, "[mailer] ", log.LstdFlags)}
+	}
+	if c.EmailSender.Scheme == "https" && c.EmailSender.Host == "api.postmarkapp.com" {
+		serverToken := c.EmailSender.Query().Get("key")
+		logger := log.New(os.Stdout, "[postmark] ", log.LstdFlags)
+		return NewPostmarkEmailSender(logger, serverToken)
+	}
+
+	panic("Unsupported email sender URL " + c.EmailSender.String())
 }
 
 func (c *PlatformConfig) NewCommandLog() CommandLog {
@@ -103,9 +121,8 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 
 	app := NewApp(commandLog)
 
-	randomNumbers := rand.New(rand.NewSource(time.Now().UnixNano()))
 	emailLogger := log.New(os.Stdout, "[mailer] ", log.LstdFlags)
-	emailSender := NewFlakyEmailSender(&EmailLogger{emailLogger}, 0.95, randomNumbers)
+	emailSender := config.NewEmailSender()
 	mailer := NewMailer(emailSender, emailLogger, app)
 
 	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
