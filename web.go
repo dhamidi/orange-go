@@ -55,6 +55,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/submit", web.PageSubmit)
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
+	routes.HandleFunc("/login/{magic}", web.PageLoginWithMagic)
 	routes.HandleFunc("/me", web.PageMe)
 	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
