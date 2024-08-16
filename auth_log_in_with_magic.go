@@ -32,6 +32,9 @@ func (self *Auth) handleLogInUserWithMagic(cmd *LogInWithMagic) error {
 		ActiveTo:   cmd.AttemptedAt.Add(time.Hour),
 	})
 
+	// erase the magic link after it's been used
+	user.Magic = ""
+
 	if err != nil {
 		return fmt.Errorf("Failed to persist session: %w", err)
 	}

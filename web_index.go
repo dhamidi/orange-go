@@ -7,6 +7,7 @@ import (
 
 func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 	pageData := web.PageData(req)
+
 	q := NewFrontpageQuery(pageData.Username())
 	if err := web.app.HandleQuery(q); err != nil {
 		http.Error(w, "failed to load front page", http.StatusInternalServerError)
