@@ -77,9 +77,6 @@ func IndexPage(path string, submissions []*Submission, context *PageData) g.Node
 func SubmissionList(submissions []*Submission) g.Node {
 	counter := 0
 	return Container(
-		hx.Get("/"),
-		hx.Trigger("every 1s"),
-		hx.Swap("outerHTML"),
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
 			counter += 1
