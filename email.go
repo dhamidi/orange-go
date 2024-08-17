@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"time"
 )
 
@@ -20,37 +19,20 @@ type Email struct {
 }
 
 type EmailSender interface {
-	SendEmail(email *Email) error
+	SendEmail(email *Email) (EmailReceipt, error)
 }
 
-type FlakyEmailSender struct {
-	Next        EmailSender
-	Random      *rand.Rand
-	FailureRate float32
-}
-
-func NewFlakyEmailSender(sender EmailSender, failureRate float32, sampler *rand.Rand) *FlakyEmailSender {
-	return &FlakyEmailSender{
-		Next:        sender,
-		Random:      sampler,
-		FailureRate: failureRate,
-	}
-}
-
-func (self *FlakyEmailSender) SendEmail(email *Email) error {
-	if self.Random.Float32() > self.FailureRate {
-		return self.Next.SendEmail(email)
-	}
-	return fmt.Errorf("flaky email sender failed")
+type EmailReceipt interface {
+	ExternalMessageID() string
 }
 
 type EmailLogger struct {
 	Logger *log.Logger
 }
 
-func (logger *EmailLogger) SendEmail(email *Email) error {
+func (logger *EmailLogger) SendEmail(email *Email) (EmailReceipt, error) {
 	logger.Logger.Printf("sending email to %s: %s", email.Recipient, email.Subject)
-	return nil
+	return nil, nil
 }
 
 type QueueEmail struct {
@@ -197,11 +179,15 @@ func (self *Mailer) catchUp() {
 	}
 }
 
-func (self *Mailer) deliver(id string) {
-	if err := self.App.HandleCommand(&SetEmailDeliveryStatus{
+func (self *Mailer) deliver(id string, receipt EmailReceipt) {
+	cmd := &SetEmailDeliveryStatus{
 		InternalID: id,
 		Status:     StatusDelivered,
-	}); err != nil {
+	}
+	if receipt != nil {
+		cmd.Message = receipt.ExternalMessageID()
+	}
+	if err := self.App.HandleCommand(cmd); err != nil {
 		self.Logger.Printf("failed to set email status: %v", err)
 		return
 	}
@@ -221,17 +207,18 @@ func (self *Mailer) fail(id string, err error) {
 
 func (self *Mailer) sendEmails() {
 	for _, email := range self.Outbox[StatusQueued] {
-		if err := self.Sender.SendEmail(email); err != nil {
+		if receipt, err := self.Sender.SendEmail(email); err != nil {
 			self.Logger.Printf("failed to send email: %v", err)
 			if email.Retries < 3 {
 				self.Logger.Printf("email %s has %d retries left", email.InternalID, 3-email.Retries)
 				email.Retries++
 				continue
 			} else {
-				self.fail(email.InternalID, fmt.Errorf("retries exhausted"))
+				self.fail(email.InternalID, fmt.Errorf("retries exhausted: %w", err))
 				continue
 			}
+		} else {
+			self.deliver(email.InternalID, receipt)
 		}
-		self.deliver(email.InternalID)
 	}
 }

@@ -41,6 +41,18 @@ type PostmarkSendWithTemplateResponse struct {
 	Message     string
 }
 
+func (res *PostmarkSendWithTemplateResponse) IsSuccess() bool {
+	return res.ErrorCode == 0
+}
+
+func (res *PostmarkSendWithTemplateResponse) Error() string {
+	return res.Message
+}
+
+func (res *PostmarkSendWithTemplateResponse) ExternalMessageID() string {
+	return res.MessageID
+}
+
 func (p *PostmarkEmailSender) toRequest(email *Email) (*http.Request, error) {
 	body := bytes.NewBufferString("")
 	message := &PostmarkSendWithTemplate{
@@ -66,26 +78,30 @@ func (p *PostmarkEmailSender) toRequest(email *Email) (*http.Request, error) {
 }
 
 // SendEmail implements EmailSender.
-func (p *PostmarkEmailSender) SendEmail(email *Email) error {
+func (p *PostmarkEmailSender) SendEmail(email *Email) (EmailReceipt, error) {
 	request, err := p.toRequest(email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := p.Client.Do(request)
 	if err != nil {
-		return fmt.Errorf("Failed to send request to Postmark: %w", err)
+		return nil, fmt.Errorf("Failed to send request to Postmark: %w", err)
 	}
 	responseBody := new(bytes.Buffer)
 	if _, err := io.Copy(responseBody, response.Body); err != nil {
-		return fmt.Errorf("Failed to read response body from Postmark: %w", err)
+		return nil, fmt.Errorf("Failed to read response body from Postmark: %w", err)
 	}
 
 	message := &PostmarkSendWithTemplateResponse{}
 	if err := json.Unmarshal(responseBody.Bytes(), message); err != nil {
-		return fmt.Errorf("Failed to decode response from Postmark: %w (response: %s)", err, responseBody.String())
+		return nil, fmt.Errorf("Failed to decode response from Postmark: %w (response: %s)", err, responseBody.String())
 	}
 
-	return nil
+	if message.IsSuccess() {
+		return message, nil
+	}
+
+	return nil, message
 }
 
 var _ EmailSender = &PostmarkEmailSender{}
