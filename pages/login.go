@@ -29,6 +29,11 @@ func LoginForm(form *FormState, backTo *url.URL) g.Node {
 				InputWithLabel("password", "Password", "password", form, Required(), g.Attr("autocomplete", "current-password")),
 				SubmitButton("Log in"),
 			),
+			A(
+				Class("mt-4 block w-full py-1 px-2 text-center bg-white border border-orange-700 rounded-md font-semibold"),
+				g.Textf("✨ Use magic ✨"),
+				Href("/magic"),
+			),
 		),
 	)
 }

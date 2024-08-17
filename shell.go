@@ -81,6 +81,34 @@ func (s *Shell) Login(params Parameters) (string, error) {
 	return login.SessionID, nil
 }
 
+func (s *Shell) RequestMagicLinkLogin(params Parameters) (string, error) {
+	email := params.Get("email")
+	magic := s.NewID()
+	request := &RequestMagicLinkLogin{
+		Email:       email,
+		Magic:       magic,
+		RequestedAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(request); err != nil {
+		return "", fmt.Errorf("request-magic-link-login: %w\n", err)
+	}
+	return request.Magic, nil
+}
+
+func (s *Shell) LoginWithMagicLink(params Parameters) (string, error) {
+	magic := params.Get("magic")
+	sessionID := s.NewID()
+	login := &LogInWithMagic{
+		SessionID:   sessionID,
+		Magic:       magic,
+		AttemptedAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(login); err != nil {
+		return "", fmt.Errorf("login-with-magic-link: %w\n", err)
+	}
+	return sessionID, nil
+}
+
 func (s *Shell) LinkVerifiedEmailToUser(params Parameters) error {
 	username := params.Get("username")
 	email := params.Get("email")

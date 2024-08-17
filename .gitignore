@@ -1,3 +1,6 @@
+# IDEs
+.vscode
+
 /orange
 /orange-*
 /*.db

@@ -40,6 +40,7 @@ func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
+		Path:     "/",
 		HttpOnly: true,
 	})
 	backTo := req.FormValue("back_to")

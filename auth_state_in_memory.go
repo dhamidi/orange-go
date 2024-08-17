@@ -70,3 +70,12 @@ func (state *InMemoryAuthState) FindUserByEmail(email string) (*User, error) {
 	}
 	return nil, ErrUserNotFound
 }
+
+func (state *InMemoryAuthState) FindUserByMagic(magic string) (*User, error) {
+	for _, user := range state.Users {
+		if user.Magic == magic {
+			return user, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}

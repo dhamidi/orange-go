@@ -13,6 +13,7 @@ type PlatformConfig struct {
 	ContentStore           *url.URL
 	AuthStore              *url.URL
 	CommandLog             *url.URL
+	MagicLoginController   *url.URL
 }
 
 func parseURL(u, field string) *url.URL {
@@ -41,6 +42,7 @@ func DefaultPlatformConfig() *PlatformConfig {
 		ContentStore:           parseURL("memory://", "ContentStore"),
 		AuthStore:              parseURL("memory://", "AuthStore"),
 		CommandLog:             parseURL("file:///commands.db", "CommandLog"),
+		MagicLoginController:   parseURL("service://", "http://localhost:8081"),
 	}
 }
 
@@ -112,6 +114,18 @@ func (c *PlatformConfig) NewAuthState() AuthState {
 	}
 }
 
+func (c *PlatformConfig) NewMagicLoginController(app *App) *MagicLoginController {
+	if c.MagicLoginController.Scheme == "service" {
+		return NewMagicLoginController(
+			app,
+			app.Commands,
+			log.New(os.Stdout, "[magic] ", log.LstdFlags),
+			c.MagicLoginController.Query().Get("baseUrl"),
+		)
+	}
+	panic("Unsupported magic login controller URL " + c.MagicLoginController.String())
+}
+
 func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	commandLog := config.NewCommandLog()
 	contentState := config.NewContentState()
@@ -121,13 +135,14 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 
 	app := NewApp(commandLog)
 
+	magicLoginController := config.NewMagicLoginController(app)
 	emailLogger := log.New(os.Stdout, "[mailer] ", log.LstdFlags)
 	emailSender := config.NewEmailSender()
 	mailer := NewMailer(emailSender, emailLogger, app)
 
 	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
 	previewGenerator := NewPreviewGenerator(app, commandLog, previewLogger)
-	starters := []Starter{previewGenerator, mailer}
+	starters := []Starter{previewGenerator, mailer, magicLoginController}
 
 	MustSetup(commandLog)
 	MustSetup(auth)

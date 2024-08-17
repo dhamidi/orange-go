@@ -17,6 +17,7 @@ type AuthState interface {
 	SetUser(user *User) error
 	FindUser(username string) (*User, error)
 	FindUserByEmail(username string) (*User, error)
+	FindUserByMagic(magic string) (*User, error)
 	FindSession(sessionID string) (*Session, error)
 	SetSession(session *Session) error
 }
@@ -25,6 +26,7 @@ type User struct {
 	Username      string
 	PasswordHash  string
 	VerifiedEmail string
+	Magic         string
 }
 
 type Session struct {
@@ -80,6 +82,10 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.linkVerifiedEmailToUser(cmd)
 	case *SetAdminUsers:
 		return self.handleSetAdminUsers(cmd)
+	case *RequestMagicLinkLogin:
+		return self.handleRequestMagicLinkLogin(cmd)
+	case *LogInWithMagic:
+		return self.handleLogInUserWithMagic(cmd)
 	}
 	return ErrCommandNotAccepted
 }
