@@ -42,7 +42,7 @@ func DefaultPlatformConfig() *PlatformConfig {
 		ContentStore:           parseURL("memory://", "ContentStore"),
 		AuthStore:              parseURL("memory://", "AuthStore"),
 		CommandLog:             parseURL("file:///commands.db", "CommandLog"),
-		MagicLoginController:   parseURL("service://", "http://localhost:8081"),
+		MagicLoginController:   parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "MagicLoginController"), 
 	}
 }
 

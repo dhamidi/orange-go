@@ -90,7 +90,7 @@ func (m *MagicLoginController) handleMagicLogin() error {
 				InternalID:   uuid.NewString(),
 				Recipients:   email,
 				Subject:      "",
-				TemplateName: "password-reset",
+				TemplateName: "magic-login",
 				TemplateData: map[string]any{
 					"name":       query.User.Username,
 					"action_url": fmt.Sprintf("%s/login/%s", m.BaseUrl, magic),
