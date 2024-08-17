@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -31,7 +32,12 @@ type EmailLogger struct {
 }
 
 func (logger *EmailLogger) SendEmail(email *Email) (EmailReceipt, error) {
-	logger.Logger.Printf("sending email to %s: %s", email.Recipient, email.Subject)
+	label := email.Subject
+	if email.Subject == "" {
+		label = email.TemplateName
+	}
+	templateData, _ := json.Marshal(email.TemplateData)
+	logger.Logger.Printf("sending email to %s: %s %s", email.Recipient, label, string(templateData))
 	return nil, nil
 }
 
