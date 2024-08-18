@@ -299,6 +299,40 @@ func (s *Shell) Submit(params Parameters) error {
 	return nil
 }
 
+func (s *Shell) RequestPasswordReset(params Parameters) (string, error) {
+	email := params.Get("email")
+	username := params.Get("username")
+	token := s.NewID()
+
+	reset := &RequestPasswordReset{
+		Username:    username,
+		Email:       email,
+		Token:       token,
+		RequestedAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(reset); err != nil {
+		return "", fmt.Errorf("failed to request password reset: %w\n", err)
+	}
+	return token, nil
+}
+
+func (s *Shell) ResetPassword(params Parameters) error {
+	token := params.Get("token")
+	newPassword, err := HashPassword(params.Get("password"))
+	if err != nil {
+		return fmt.Errorf("reset-password: failed to hash password: %w", err)
+	}
+	reset := &ResetPassword{
+		Token:       token,
+		NewPassword: *newPassword,
+		AttemptedAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(reset); err != nil {
+		return fmt.Errorf("failed to reset password: %w\n", err)
+	}
+	return nil
+}
+
 func (s *Shell) Comment(params Parameters) error {
 	sessionID := params.Get("sessionID")
 	itemID := params.Get("itemID")

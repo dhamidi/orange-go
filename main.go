@@ -73,6 +73,16 @@ func main() {
 		sessionID, err := shell.Login(values)
 		run(err, "login <username> <password>")
 		fmt.Printf("%s\n", sessionID)
+	case "request-password-reset":
+		pv(2, "username", &values)
+		pv(3, "email", &values)
+		token, err := shell.RequestPasswordReset(values)
+		run(err, "request-password-reset <username> <email>")
+		fmt.Printf("%s\n", token)
+	case "reset-password":
+		pv(2, "token", &values)
+		pv(3, "password", &values)
+		run(shell.ResetPassword(values), "reset-password <token> <password>")
 	case "request-magic-link":
 		pv(2, "email", &values)
 		magic, err := shell.RequestMagicLinkLogin(values)

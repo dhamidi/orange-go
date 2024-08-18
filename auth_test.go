@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func Test_ASignedUpUser_CanLogIn_WithTheirPassword(t *testing.T) {
@@ -144,4 +145,31 @@ func Test_LogInWithMagic_CreatesNewUser_WhenDomainIsMagic(t *testing.T) {
 	if act, exp := user.Username, "dario.hamidi"; act != exp {
 		t.Fatalf("expected username to be %q, got %q", exp, act)
 	}
+}
+
+func Test_RequestPasswordReset_ReturnsErrorIfEmailIsNotVerified(t *testing.T) {
+	scenario := setup(t)
+	scenario.mustFailWith(scenario.requestPasswordReset("admin", "admin@example.com"), ErrUserNotFound)
+
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	scenario.must(scenario.requestPasswordReset("admin", "admin@example.com"))
+}
+
+func Test_ResetPasswordFails_ifNoPasswordResetWasRequested(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	scenario.mustFailWith(scenario.resetPassword("token", "new-password"), ErrUserNotFound)
+}
+
+func Test_ResetPasswordFails_ifRequestIsOlderThan30Minutes(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.signup("admin", "admin"))
+	scenario.must(scenario.linkVerifiedEmailToUser("admin", "admin@example.com"))
+	request := scenario.requestPasswordReset("admin", "admin@example.com").(*RequestPasswordReset)
+	request.RequestedAt = request.RequestedAt.Add(-31 * time.Minute)
+	scenario.must(request)
+
+	scenario.mustFailWith(scenario.resetPassword(request.Token, "new-password"), ErrPasswordResetExpired)
 }

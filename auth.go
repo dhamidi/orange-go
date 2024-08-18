@@ -22,15 +22,19 @@ type AuthState interface {
 	FindUser(username string) (*User, error)
 	FindUserByEmail(username string) (*User, error)
 	FindUserByMagic(magic string) (*User, error)
+	FindUserByPasswordResetToken(token string) (*User, error)
 	FindSession(sessionID string) (*Session, error)
+
 	SetSession(session *Session) error
 }
 
 type User struct {
-	Username      string
-	PasswordHash  string
-	VerifiedEmail string
-	Magic         string
+	Username                 string
+	PasswordHash             string
+	VerifiedEmail            string
+	Magic                    string
+	PasswordResetToken       string
+	PasswordResetRequestedAt time.Time
 }
 
 type Session struct {
@@ -92,6 +96,10 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleLogInUserWithMagic(cmd)
 	case *SetMagicDomains:
 		return self.handleSetMagicDomains(cmd)
+	case *RequestPasswordReset:
+		return self.handleRequestPasswordReset(cmd)
+	case *ResetPassword:
+		return self.handleResetPassword(cmd)
 	}
 	return ErrCommandNotAccepted
 }

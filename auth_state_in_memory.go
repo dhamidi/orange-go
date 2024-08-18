@@ -99,3 +99,12 @@ func (state *InMemoryAuthState) FindUserByMagic(magic string) (*User, error) {
 	}
 	return nil, ErrUserNotFound
 }
+
+func (state *InMemoryAuthState) FindUserByPasswordResetToken(token string) (*User, error) {
+	for _, user := range state.Users {
+		if user.PasswordResetToken == token {
+			return user, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}

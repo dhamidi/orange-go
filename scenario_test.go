@@ -128,6 +128,28 @@ func (t *TestContext) linkVerifiedEmailToUser(username string, email string) Com
 	}
 }
 
+func (t *TestContext) resetPassword(token, password string) Command {
+	t.t.Helper()
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		t.t.Fatalf("failed to hash password: %s", err)
+	}
+	return &ResetPassword{
+		Token:       token,
+		NewPassword: *passwordHash,
+		AttemptedAt: time.Now(),
+	}
+}
+
+func (t *TestContext) requestPasswordReset(username string, email string) Command {
+	return &RequestPasswordReset{
+		Username:    username,
+		Email:       email,
+		Token:       uuid.NewString(),
+		RequestedAt: time.Now(),
+	}
+}
+
 func (t *TestContext) requestMagicLinkLogin(email, magic string) Command {
 	return &RequestMagicLinkLogin{
 		Email:       email,
