@@ -3,6 +3,7 @@ package pages
 import (
 	"fmt"
 	"net/url"
+	"runtime"
 	"time"
 
 	g "github.com/maragudk/gomponents"
@@ -186,12 +187,31 @@ func Prose(children ...g.Node) g.Node {
 	return Div(Class("prose"), g.Group(children))
 }
 
+func humanBytes(n uint64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for n := n / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(n)/float64(div), "KMGTPE"[exp])
+}
+
+func memoryUsage() string {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return fmt.Sprintf("MEM: %v", humanBytes(m.Alloc))
+}
+
 func PageFooter() g.Node {
 	return Footer(Class("block"),
-		P(Class("text-center text-sm text-gray-400"),
+		P(Class("text-center font-mono text-sm text-gray-400"),
 			ID("rendered-at"),
-			// We can use string interpolation directly, like fmt.Sprintf.
-			g.Textf("Rendered %v. ", time.Now().Format(time.RFC3339)),
+			g.Textf("T %v ", time.Now().Format(time.RFC3339)),
+			g.Textf(" | %s", memoryUsage()),
 		),
 	)
 }
