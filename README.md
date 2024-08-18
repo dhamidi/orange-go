@@ -74,11 +74,38 @@ disallowing certain usernames.
 
 The default username policy enforces no length minimum, and a maximum of 32 characters.
 
+### Admin users
+
 A set of users can be designated as administrators.
 
 Administrators have access to a set of endpoints under `/admin`,
 which allows the to inspect the state of the system and perform
 certain actions.
+
+### Magic links
+
+Users that have a verified email address or have access to an email
+address belonging to a magic domain, can log in using a magic link:
+a link submitted via email that allows them to log in directly.
+
+To configure the list of magic domains, run the `set-magic-domains` command:
+
+```shell
+# allow everyone with a @bolt.eu email address to log in using magic links
+./orange set-magic-domains bolt.eu
+```
+
+When a user logs in for the first time with a magic link, a new user account
+is created: the part of the email address before the `@` symbol is used
+as the user's username.
+
+### Verified email addresses
+
+There are two ways to verify an email address:
+
+1. an administrator manually links an already verified address:
+   `./orange link-email <username> <email>`
+2. a user verifies their email address by clicking a link sent to the email address
 
 **TODO**: allow changing password on behalf of the users.
 

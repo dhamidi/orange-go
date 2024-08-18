@@ -17,7 +17,9 @@ func (web *WebApp) PageRequestLoginWithMagic(w http.ResponseWriter, req *http.Re
 		params := url.Values{}
 		params.Set("email", email)
 		// ignore errors, as we don't want to leak if an email is registered
-		web.shell.RequestMagicLinkLogin(params)
+		if _, err := web.shell.RequestMagicLinkLogin(params); err != nil {
+			web.logger.Printf("failed to request magic link: %v", err)
+		}
 
 		if isHX(req) {
 			pages.MagicSentPage(req.URL.Path).Render(w)

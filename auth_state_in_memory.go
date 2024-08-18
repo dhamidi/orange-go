@@ -1,10 +1,30 @@
 package main
 
+import (
+	"maps"
+	"slices"
+)
+
+var _ AuthState = &InMemoryAuthState{}
+
 type InMemoryAuthState struct {
 	UsernamePolicy *UsernamePolicy
 	Users          map[string]*User
 	AdminUsers     map[string]bool
+	MagicDomains   map[string]bool
 	Sessions       map[string]*Session
+}
+
+func (state *InMemoryAuthState) GetMagicDomains() ([]string, error) {
+	return slices.Collect(maps.Keys(state.MagicDomains)), nil
+}
+
+func (state *InMemoryAuthState) SetMagicDomains(domains []string) error {
+	state.MagicDomains = make(map[string]bool)
+	for _, domain := range domains {
+		state.MagicDomains[domain] = true
+	}
+	return nil
 }
 
 func NewInMemoryAuthState() *InMemoryAuthState {

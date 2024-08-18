@@ -132,6 +132,15 @@ func (s *Shell) SetAdminUsers(params Parameters) error {
 	return nil
 }
 
+func (s *Shell) SetMagicDomains(params Parameters) error {
+	domains := GetAllValues(params, "domain")
+	setMagicDomains := &SetMagicDomains{Domains: domains}
+	if err := s.App.HandleCommand(setMagicDomains); err != nil {
+		return fmt.Errorf("set-magic-domains: %w\n", err)
+	}
+	return nil
+}
+
 func (s *Shell) GetUserRoles(params Parameters) ([]UserRole, error) {
 	username := params.Get("username")
 	q := NewGetUserRolesQuery(username)

@@ -144,6 +144,12 @@ func (t *TestContext) loginWithMagic(magic string) Command {
 	}
 }
 
+func (t *TestContext) setMagicDomains(domains ...string) Command {
+	return &SetMagicDomains{
+		Domains: domains,
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }

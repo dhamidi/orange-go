@@ -15,6 +15,10 @@ type AuthState interface {
 	SetAdminUsers(users []string) error
 	IsAdmin(username string) (bool, error)
 	SetUser(user *User) error
+
+	SetMagicDomains(domains []string) error
+	GetMagicDomains() ([]string, error)
+
 	FindUser(username string) (*User, error)
 	FindUserByEmail(username string) (*User, error)
 	FindUserByMagic(magic string) (*User, error)
@@ -86,6 +90,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 		return self.handleRequestMagicLinkLogin(cmd)
 	case *LogInWithMagic:
 		return self.handleLogInUserWithMagic(cmd)
+	case *SetMagicDomains:
+		return self.handleSetMagicDomains(cmd)
 	}
 	return ErrCommandNotAccepted
 }

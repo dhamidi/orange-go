@@ -146,6 +146,11 @@ func main() {
 			values.Set(fmt.Sprintf("username[%d]", i), arg)
 		}
 		run(shell.SetAdminUsers(values), "set-admin-users <username>...")
+	case "set-magic-domains":
+		for i, arg := range os.Args[2:] {
+			values.Set(fmt.Sprintf("domain[%d]", i), arg)
+		}
+		run(shell.SetMagicDomains(values), "set-magic-domains <username>...")
 	case "serve":
 		web := NewWebApp(app, shell)
 		conninfo := ":8080"

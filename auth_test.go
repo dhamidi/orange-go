@@ -129,3 +129,19 @@ func Test_LogInWithMagic_ReturnsError_WhenMagicIsForbidden(t *testing.T) {
 	scenario := setup(t)
 	scenario.mustFailWith(scenario.loginWithMagic("magic-string"), ErrUserNotFound)
 }
+
+func Test_LogInWithMagic_CreatesNewUser_WhenDomainIsMagic(t *testing.T) {
+	scenario := setup(t)
+	scenario.must(scenario.setMagicDomains("bolt.eu"))
+	scenario.must(scenario.requestMagicLinkLogin("dario.hamidi@bolt.eu", "magic-string"))
+	scenario.must(scenario.loginWithMagic("magic-string"))
+
+	user, err := scenario.findUserByEmail("dario.hamidi@bolt.eu")
+	if err != nil {
+		t.Fatalf("failed to find user by email: %s", err)
+	}
+
+	if act, exp := user.Username, "dario.hamidi"; act != exp {
+		t.Fatalf("expected username to be %q, got %q", exp, act)
+	}
+}
