@@ -32,6 +32,8 @@ func (m *MagicLoginController) HandleCommand(command Command, from time.Time) er
 	switch c := command.(type) {
 	case *RequestMagicLinkLogin:
 		return m.addPendingRequest(c, from)
+	case *LogInWithMagic:
+		return m.removePendingRequest(c)
 	default:
 		return ErrCommandNotAccepted
 	}
@@ -76,6 +78,16 @@ func (m *MagicLoginController) loop(stop <-chan struct{}) {
 func (m *MagicLoginController) addPendingRequest(c *RequestMagicLinkLogin, from time.Time) error {
 	if c.RequestedAt.After(from) {
 		m.PendingRequests[c.Email] = c.Magic
+	}
+	return nil
+}
+
+func (m *MagicLoginController) removePendingRequest(c *LogInWithMagic) error {
+	for email, magic := range m.PendingRequests {
+		if magic == c.Magic {
+			delete(m.PendingRequests, email)
+			return nil
+		}
 	}
 	return nil
 }
