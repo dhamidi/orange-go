@@ -1,5 +1,4 @@
 #!/usr/bin/env zsh
-export GOEXPERIMENT=rangefunc
 if ! [[ -f .env ]]; then
   touch .env
 fi
