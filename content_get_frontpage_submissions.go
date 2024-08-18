@@ -1,7 +1,9 @@
 package main
 
 type GetFrontpageSubmissions struct {
-	Viewer      *string
+	Viewer *string
+	After  int
+
 	Submissions []*Submission
 }
 
@@ -17,7 +19,7 @@ func NewFrontpageQuery(viewer *string) *GetFrontpageSubmissions {
 }
 
 func (self *Content) getFrontpageSubmissions(query *GetFrontpageSubmissions) error {
-	submissions, err := self.state.TopNSubmissions(10)
+	submissions, err := self.state.TopNSubmissions(10, query.After)
 	if err != nil {
 		return err
 	}

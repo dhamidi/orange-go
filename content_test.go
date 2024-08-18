@@ -143,3 +143,26 @@ func Test_OnFrontpage_SubmissionsAreSortedByScores_ThenSubmissionTime(t *testing
 		}
 	}
 }
+
+func Test_OnFrontpage_SubmissionsCanBePaged_WithAfter(t *testing.T) {
+	scenario := setup(t)
+	for i := range 10 {
+		postLink := scenario.postLink("https://news.ycombinator.com", fmt.Sprintf("%d", i))
+		postLink.SubmittedAt = postLink.SubmittedAt.Add(-time.Duration(10-i) * 24 * time.Hour)
+		scenario.must(postLink)
+	}
+	submissions := scenario.frontpageAfter(0)
+	if act, exp := len(submissions), 10; act != exp {
+		t.Fatalf("expected %d submissions, got %d", exp, act)
+	}
+
+	submissions = scenario.frontpageAfter(5)
+	if act, exp := len(submissions), 5; act != exp {
+		t.Fatalf("expected %d submissions, got %d", exp, act)
+	}
+
+	submissions = scenario.frontpageAfter(11)
+	if act, exp := len(submissions), 0; act != exp {
+		t.Fatalf("expected %d submissions, got %d", exp, act)
+	}
+}

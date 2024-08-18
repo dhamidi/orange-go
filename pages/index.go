@@ -60,6 +60,7 @@ type PageData struct {
 	CurrentUser *User
 	FormState   *FormState
 	BackTo      *url.URL
+	LoadMore    *url.URL
 }
 
 func (p *PageData) Username() *string {
@@ -71,10 +72,10 @@ func (p *PageData) Username() *string {
 }
 
 func IndexPage(path string, submissions []*Submission, context *PageData) g.Node {
-	return Page("The Orange Website", path, SubmissionList(submissions), context)
+	return Page("The Orange Website", path, SubmissionList(submissions, context.LoadMore), context)
 }
 
-func SubmissionList(submissions []*Submission) g.Node {
+func SubmissionList(submissions []*Submission, loadMore *url.URL) g.Node {
 	counter := 0
 	return Container(
 		Class("flex flex-col space-y-2"),
@@ -84,12 +85,6 @@ func SubmissionList(submissions []*Submission) g.Node {
 				Class("flex flex-row space-x-2"),
 				Data("item-id", s.ItemID),
 				Div(Class("prose w-4 text-center"), g.Textf("%d.", counter)),
-				g.Iff(s.ImageURL != nil, func() g.Node {
-					return Div(Class(fmt.Sprintf("min-w-8 w-8 h-8 bg-[url('%s')] bg-contain bg-center bg-no-repeat", *s.ImageURL)))
-				}),
-				g.Iff(s.ImageURL == nil, func() g.Node {
-					return Div(Class("min-w-8 w-8 h-8"))
-				}),
 				Div(
 					P(
 						A(Href(s.Url), g.Text(s.Title)),
@@ -105,7 +100,13 @@ func SubmissionList(submissions []*Submission) g.Node {
 						A(Href("/item?id="+s.ItemID), g.Textf("%d comments", s.CommentCount)),
 					),
 				))
-		})))
+		})),
+		g.Iff(loadMore != nil, func() g.Node {
+			return Div(Class("mt-4"),
+				ButtonLink("More", "/?after=10"),
+			)
+		}),
+	)
 }
 
 func Page(title, path string, body g.Node, context *PageData) g.Node {
@@ -148,8 +149,8 @@ func Navbar(currentPath string, context *PageData) g.Node {
 	return Nav(Class("bg-orange-500"),
 		Container(
 			Div(Class("flex relative items-center min-h-16"),
-				Span(Class("text-white font-bold p-2"), g.Text("The Orange Website")),
-				NavbarLink("/", "New", currentPath == "/"),
+				A(Href("/"), Class("text-white font-bold p-2"), g.Text("The Orange Website")),
+				NavbarLink("/", "Top", currentPath == "/"),
 				NavbarLink("/submit", "Submit", currentPath == "/submit"),
 
 				g.If(context.CurrentUser == nil, NavbarLink("/login", "Log in", currentPath == "/login")),

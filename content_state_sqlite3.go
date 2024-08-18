@@ -89,13 +89,13 @@ func (self *PersistentContentState) PutSubmissionPreview(preview *SubmissionPrev
 	return nil
 }
 
-func (self *PersistentContentState) TopNSubmissions(n int) ([]*Submission, error) {
+func (self *PersistentContentState) TopNSubmissions(n int, after int) ([]*Submission, error) {
 	db, err := sql.Open("sqlite3", self.conninfo())
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	defer db.Close()
-	rows, err := db.Query(`SELECT item_id, submitter, url, title, submitted_at FROM submissions ORDER BY submitted_at DESC LIMIT ?`, n)
+	rows, err := db.Query(`SELECT item_id, submitter, url, title, submitted_at FROM submissions ORDER BY submitted_at DESC LIMIT ? OFFSET ?`, n, after)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query submissions: %w", err)
 	}

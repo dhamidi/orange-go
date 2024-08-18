@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"sync"
 	"time"
 )
 
 type InMemoryContentState struct {
+	Lock             sync.Mutex
 	FrontpageDirty   bool
 	LastSubmissionAt time.Time
 	Submissions      []*Submission
@@ -29,6 +31,8 @@ func (self *InMemoryContentState) score(s *Submission) {
 }
 
 func (self *InMemoryContentState) refreshFrontpage() {
+	self.Lock.Lock()
+	defer self.Lock.Unlock()
 	if !self.FrontpageDirty {
 		return
 	}
@@ -119,12 +123,20 @@ func (self *InMemoryContentState) PutComment(comment *Comment) error {
 	return nil
 }
 
-func (self *InMemoryContentState) TopNSubmissions(n int) ([]*Submission, error) {
-	if n > len(self.Submissions) {
-		n = len(self.Submissions)
+func (self *InMemoryContentState) TopNSubmissions(n int, after int) ([]*Submission, error) {
+	if after < 0 {
+		after = 0
 	}
+	if after >= len(self.Submissions) {
+		after = len(self.Submissions)
+	}
+	end := after + n
+	if end > len(self.Submissions) {
+		end = len(self.Submissions)
+	}
+
 	self.refreshFrontpage()
-	topN := self.Submissions[:n]
+	topN := self.Submissions[after:end]
 	for _, s := range topN {
 		s.VoteCount = len(self.VotesByItemID[s.ItemID])
 	}

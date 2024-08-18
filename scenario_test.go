@@ -74,7 +74,13 @@ func (t *TestContext) login(username string, password string) Command {
 
 func (t *TestContext) frontpage() []*Submission {
 	t.t.Helper()
+	return t.frontpageAfter(0)
+}
+
+func (t *TestContext) frontpageAfter(after int) []*Submission {
+	t.t.Helper()
 	top := NewFrontpageQuery(&t.Viewer)
+	top.After = after
 	if err := t.App.HandleQuery(top); err != nil {
 		t.t.Fatalf("%s", err)
 	}

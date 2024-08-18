@@ -2,12 +2,18 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"orange/pages"
+	"strconv"
 )
 
 func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 	pageData := web.PageData(req)
 	q := NewFrontpageQuery(pageData.Username())
+	if after, err := strconv.Atoi(req.URL.Query().Get("after")); err == nil {
+		q.After = after
+	}
+
 	if err := web.app.HandleQuery(q); err != nil {
 		http.Error(w, "failed to load front page", http.StatusInternalServerError)
 		return
@@ -15,18 +21,15 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 	templateData := []*pages.Submission{}
 	for _, submission := range q.Submissions {
 		title := ""
-		imageURL := (*string)(nil)
 		if submission.Preview != nil {
 			if submission.Preview.Title != nil {
 				title = *submission.Preview.Title
 			}
-			imageURL = submission.Preview.ImageURL
 		}
 		templateData = append(templateData, &pages.Submission{
 			ItemID:         submission.ItemID,
 			Title:          submission.Title,
 			GeneratedTitle: title,
-			ImageURL:       imageURL,
 			Url:            submission.Url,
 			SubmittedAt:    submission.SubmittedAt,
 			Submitter:      submission.Submitter,
@@ -36,10 +39,15 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
+	if len(q.Submissions) == 10 {
+		pageData.LoadMore = &url.URL{Path: req.URL.Path}
+		pageData.LoadMore.Query().Add("after", strconv.Itoa(q.After+10))
+	}
+
 	if isHX(req) {
-		pages.SubmissionList(templateData).Render(w)
+		pages.SubmissionList(templateData, pageData.LoadMore).Render(w)
 		return
 	}
 
-	_ = pages.IndexPage(req.URL.Path, templateData, web.PageData(req)).Render(w)
+	_ = pages.IndexPage(req.URL.Path, templateData, pageData).Render(w)
 }

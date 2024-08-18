@@ -9,7 +9,7 @@ type ContentState interface {
 	PutSubmissionPreview(preview *SubmissionPreview) error
 	PutSubmission(submission *Submission) error
 	GetSubmission(itemID string) (*Submission, error)
-	TopNSubmissions(n int) ([]*Submission, error)
+	TopNSubmissions(n int, after int) ([]*Submission, error)
 	RecordVote(vote *Vote) error
 	HasVotedFor(user string, itemIDs []string) ([]bool, error)
 	PutComment(comment *Comment) error
