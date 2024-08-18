@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,7 +34,9 @@ func (m *MagicLoginController) HandleCommand(command Command, from time.Time) er
 	case *RequestMagicLinkLogin:
 		return m.addPendingRequest(c, from)
 	case *LogInWithMagic:
-		return m.removePendingRequest(c)
+		return m.removePendingRequest(c.Magic)
+	case *QueueEmail:
+		return m.handleQueueEmail(c)
 	default:
 		return ErrCommandNotAccepted
 	}
@@ -82,13 +85,27 @@ func (m *MagicLoginController) addPendingRequest(c *RequestMagicLinkLogin, from 
 	return nil
 }
 
-func (m *MagicLoginController) removePendingRequest(c *LogInWithMagic) error {
-	for email, magic := range m.PendingRequests {
-		if magic == c.Magic {
+func (m *MagicLoginController) removePendingRequest(magic string) error {
+	for email, pendingMagic := range m.PendingRequests {
+		if pendingMagic == magic {
 			delete(m.PendingRequests, email)
 			return nil
 		}
 	}
+	return nil
+}
+
+func (m *MagicLoginController) handleQueueEmail(c *QueueEmail) error {
+	if c.TemplateName != "magic-login" {
+		return nil
+	}
+	actionUrl, ok := c.TemplateData["action_url"].(string)
+	if !ok {
+		return nil
+	}
+	pathSegments := strings.Split(actionUrl, "/")
+	token := pathSegments[len(pathSegments)-1]
+	m.removePendingRequest(token)
 	return nil
 }
 
