@@ -11,15 +11,17 @@ import (
 )
 
 type PostmarkEmailSender struct {
+	From   string
 	Logger *log.Logger
 	APIKey string
 	Client *http.Client
 }
 
-func NewPostmarkEmailSender(logger *log.Logger, apiKey string) *PostmarkEmailSender {
+func NewPostmarkEmailSender(logger *log.Logger, params Parameters) *PostmarkEmailSender {
 	return &PostmarkEmailSender{
+		From:   params.Get("from"),
 		Logger: logger,
-		APIKey: apiKey,
+		APIKey: params.Get("key"),
 		Client: http.DefaultClient,
 	}
 }
@@ -58,7 +60,7 @@ func (p *PostmarkEmailSender) toRequest(email *Email) (*http.Request, error) {
 	message := &PostmarkSendWithTemplate{
 		TemplateAlias: email.TemplateName,
 		TemplateModel: email.TemplateData,
-		From:          "Dario <dario@decode.ee>",
+		From:          p.From,
 		To:            email.Recipient,
 		Metadata:      map[string]any{"internal_id": email.InternalID},
 		MessageStream: "outbound",

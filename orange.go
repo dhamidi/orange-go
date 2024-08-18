@@ -80,8 +80,15 @@ func (c *PlatformConfig) NewEmailSender() EmailSender {
 	}
 	if c.EmailSender.Scheme == "https" && c.EmailSender.Host == "api.postmarkapp.com" {
 		serverToken := c.EmailSender.Query().Get("key")
+		from := c.EmailSender.Query().Get("from")
+		if serverToken == "" {
+			panic("Missing key in email sender URL")
+		}
+		if from == "" {
+			panic("Missing from address in email sender URL")
+		}
 		logger := log.New(os.Stdout, "[postmark] ", log.LstdFlags)
-		return NewPostmarkEmailSender(logger, serverToken)
+		return NewPostmarkEmailSender(logger, c.EmailSender.Query())
 	}
 
 	panic("Unsupported email sender URL " + c.EmailSender.String())
