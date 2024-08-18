@@ -1,6 +1,9 @@
 package pages
 
 import (
+	"fmt"
+	"strings"
+
 	g "github.com/maragudk/gomponents"
 	hx "github.com/maragudk/gomponents-htmx"
 
@@ -47,10 +50,11 @@ func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
 	)
 }
 
-func CommentLink(itemID string) g.Node {
+func CommentLink(itemID string, formTarget string) g.Node {
 	return A(
 		hx.Get("/comment?itemID="+itemID),
 		hx.Swap("outerHTML"),
+		hx.Target(formTarget),
 		Href("/item?id="+itemID),
 		Span(Class("text-xs mx-1 font-bold font-mono"), g.Text("[reply]")),
 	)
@@ -88,13 +92,15 @@ func CommentWithChildren(c Comment) g.Node {
 }
 
 func CommentBlock(c Comment) g.Node {
+	commentFormTarget := strings.Replace(fmt.Sprintf("c-%s", c.CommentableID()), "/", "-", -1)
 	return Div(
 		Class("flex flex-col text-xs font-mono border-l-2 mt-1 pl-2 border-orange-700"),
 		P(Class("text-xs"),
 			g.Textf("%s at ", c.CommentAuthor()),
 			TimeLabel(c.WrittenAt()),
-			CommentLink(c.CommentableID()),
+			CommentLink(c.CommentableID(), "#"+commentFormTarget),
 		),
 		P(Class("prose text-xs my-1 prose-stone"), g.Text(c.CommentContent())),
+		Div(ID(commentFormTarget)),
 	)
 }
