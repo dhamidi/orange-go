@@ -46,7 +46,7 @@ func ForbiddenMagicPage(path string) g.Node {
 	)
 }
 
-func MagicSentPage(path string) g.Node {
+func MagicSentPage() g.Node {
 	return Div(
 		Class("flex flex-row justify-center items-center py-12"),
 		P(Class("text-xl font-semibold"), g.Textf("Magic has been sent 🧙🦉")),

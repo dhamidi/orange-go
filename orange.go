@@ -8,12 +8,13 @@ import (
 )
 
 type PlatformConfig struct {
-	SkipErrorsDuringReplay bool
-	EmailSender            *url.URL
-	ContentStore           *url.URL
-	AuthStore              *url.URL
-	CommandLog             *url.URL
-	MagicLoginController   *url.URL
+	SkipErrorsDuringReplay  bool
+	EmailSender             *url.URL
+	ContentStore            *url.URL
+	AuthStore               *url.URL
+	CommandLog              *url.URL
+	MagicLoginController    *url.URL
+	PasswordResetController *url.URL
 }
 
 func parseURL(u, field string) *url.URL {
@@ -37,12 +38,13 @@ func toFilePath(u *url.URL) string {
 
 func DefaultPlatformConfig() *PlatformConfig {
 	return &PlatformConfig{
-		SkipErrorsDuringReplay: false,
-		EmailSender:            parseURL("memory://", "EmailSender"),
-		ContentStore:           parseURL("memory://", "ContentStore"),
-		AuthStore:              parseURL("memory://", "AuthStore"),
-		CommandLog:             parseURL("file:///commands.db", "CommandLog"),
-		MagicLoginController:   parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "MagicLoginController"),
+		SkipErrorsDuringReplay:  false,
+		EmailSender:             parseURL("memory://", "EmailSender"),
+		ContentStore:            parseURL("memory://", "ContentStore"),
+		AuthStore:               parseURL("memory://", "AuthStore"),
+		CommandLog:              parseURL("file:///commands.db", "CommandLog"),
+		MagicLoginController:    parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "MagicLoginController"),
+		PasswordResetController: parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "PasswordResetController"),
 	}
 }
 
@@ -55,11 +57,12 @@ func NewPlatformConfigForTest() *PlatformConfig {
 func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 	config := DefaultPlatformConfig()
 	fields := map[string]**url.URL{
-		"CONTENT_STORE":          &config.ContentStore,
-		"AUTH_STORE":             &config.AuthStore,
-		"COMMAND_LOG":            &config.CommandLog,
-		"EMAIL_SENDER":           &config.EmailSender,
-		"MAGIC_LOGIN_CONTROLLER": &config.MagicLoginController,
+		"CONTENT_STORE":             &config.ContentStore,
+		"AUTH_STORE":                &config.AuthStore,
+		"COMMAND_LOG":               &config.CommandLog,
+		"EMAIL_SENDER":              &config.EmailSender,
+		"MAGIC_LOGIN_CONTROLLER":    &config.MagicLoginController,
+		"PASSWORD_RESET_CONTROLLER": &config.PasswordResetController,
 	}
 	for name, dest := range fields {
 		newURL := getenv("ORANGE_" + name)
@@ -134,6 +137,17 @@ func (c *PlatformConfig) NewMagicLoginController(app *App) *MagicLoginController
 	panic("Unsupported magic login controller URL " + c.MagicLoginController.String())
 }
 
+func (c *PlatformConfig) NewPasswordResetController(app *App) *PasswordResetController {
+	if c.PasswordResetController.Scheme == "service" {
+		return NewPasswordResetController(
+			app,
+			log.New(os.Stdout, "[password-reset] ", log.LstdFlags),
+			c.PasswordResetController.Query().Get("baseUrl"),
+		)
+	}
+	panic("Unsupported password reset controller URL " + c.PasswordResetController.String())
+}
+
 func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	commandLog := config.NewCommandLog()
 	contentState := config.NewContentState()
@@ -144,13 +158,15 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	app := NewApp(commandLog)
 
 	magicLoginController := config.NewMagicLoginController(app)
+	passwordResetController := config.NewPasswordResetController(app)
+
 	emailLogger := log.New(os.Stdout, "[mailer] ", log.LstdFlags)
 	emailSender := config.NewEmailSender()
 	mailer := NewMailer(emailSender, emailLogger, app)
 
 	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
 	previewGenerator := NewPreviewGenerator(app, commandLog, previewLogger)
-	starters := []Starter{previewGenerator, mailer, magicLoginController}
+	starters := []Starter{previewGenerator, mailer, magicLoginController, passwordResetController}
 
 	MustSetup(commandLog)
 	MustSetup(auth)

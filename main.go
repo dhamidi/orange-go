@@ -74,10 +74,9 @@ func main() {
 		run(err, "login <username> <password>")
 		fmt.Printf("%s\n", sessionID)
 	case "request-password-reset":
-		pv(2, "username", &values)
-		pv(3, "email", &values)
+		pv(2, "email", &values)
 		token, err := shell.RequestPasswordReset(values)
-		run(err, "request-password-reset <username> <email>")
+		run(err, "request-password-reset <email>")
 		fmt.Printf("%s\n", token)
 	case "reset-password":
 		pv(2, "token", &values)

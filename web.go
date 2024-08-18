@@ -56,6 +56,8 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/logout", web.DoLogOut)
 	routes.HandleFunc("/login", web.PageLogin)
 	routes.HandleFunc("/magic", web.PageRequestLoginWithMagic)
+	routes.HandleFunc("/reset-password/{token}", web.PageResetPasswordToken)
+	routes.HandleFunc("/reset-password", web.PageResetPassword)
 	routes.HandleFunc("/login/{magic}", web.PageLoginWithMagic)
 	routes.HandleFunc("/me", web.PageMe)
 	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))

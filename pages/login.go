@@ -20,7 +20,7 @@ func LoginForm(form *FormState, backTo *url.URL) g.Node {
 			H2(Class("mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900"),
 				g.Textf("Welcome"))),
 		Div(
-			Class("mt-10 sm:mx-auto sm:w-full sm:max-w-sm"),
+			Class("mt-10 mb-2 sm:mx-auto sm:w-full sm:max-w-sm"),
 			Form(Class("space-y-6"), Action("/login"), Method("POST"),
 				g.Iff(backTo != nil, func() g.Node {
 					return Input(Type("hidden"), Name("back_to"), Value(backTo.String()))
@@ -33,6 +33,14 @@ func LoginForm(form *FormState, backTo *url.URL) g.Node {
 				Class("mt-4 block w-full py-1 px-2 text-center bg-white border border-orange-700 rounded-md font-semibold"),
 				g.Textf("✨ Use magic ✨"),
 				Href("/magic"),
+			),
+		),
+		Div(
+			Class("mt-1 border-t border-gray-700 sm:mx-auto sm:w-full sm:max-w-sm"),
+			A(
+				Class("mt-4 block w-full py-1 px-2 text-center bg-white border border-orange-700 rounded-md font-semibold"),
+				g.Textf("⚙️  Reset your password ⚙️ "),
+				Href("/reset-password"),
 			),
 		),
 	)

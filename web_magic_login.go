@@ -22,7 +22,7 @@ func (web *WebApp) PageRequestLoginWithMagic(w http.ResponseWriter, req *http.Re
 		}
 
 		if isHX(req) {
-			pages.MagicSentPage(req.URL.Path).Render(w)
+			pages.MagicSentPage().Render(w)
 		}
 	}
 }

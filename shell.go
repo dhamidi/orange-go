@@ -301,11 +301,15 @@ func (s *Shell) Submit(params Parameters) error {
 
 func (s *Shell) RequestPasswordReset(params Parameters) (string, error) {
 	email := params.Get("email")
-	username := params.Get("username")
 	token := s.NewID()
 
+	q := NewFindUserByEmail(email)
+	if err := s.App.HandleQuery(q); err != nil || q.User == nil {
+		return "", ErrUserNotFound
+	}
+
 	reset := &RequestPasswordReset{
-		Username:    username,
+		Username:    q.User.Username,
 		Email:       email,
 		Token:       token,
 		RequestedAt: s.CurrentTime(),
