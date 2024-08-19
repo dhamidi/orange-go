@@ -1,5 +1,7 @@
 #!/usr/bin/env zsh
 
+./tailwindcss -i pages/main.css -o static/main.css &&
+  gzip < static/main.css > static/main.css.gz &&
 case "${1:-local}" in
   "digitalocean")
     export CGO_ENABLED=1
