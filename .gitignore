@@ -7,5 +7,9 @@
 /*.db-wal
 /*.db-shm
 
-
 /.env
+/tailwindcss
+
+# Generated files
+/static/main.css
+/static/main.css.gz

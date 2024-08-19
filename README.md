@@ -9,6 +9,14 @@ Ideas found here:
 - modules/services living _within the same process_, i.e. microservices without
   the network boundaries, or rather bounded contexts from Domain Driven Design.
 
+## Development
+
+This project requires Go 1.23.0 or later because it is using iterators.
+
+Additionally tailwindcss is required.
+
+The `setup.sh` script does its best to set up your environment.
+
 ## Features
 
 - User signup and login,

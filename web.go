@@ -1,14 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"orange/pages"
 	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"embed"
@@ -47,6 +50,11 @@ func NewWebApp(app *App, shell *Shell) *WebApp {
 
 func (web *WebApp) registerRoutes() {
 	staticFiles, _ := fs.Sub(embeddedStaticFiles, "static")
+	staticFileServer := &WithGzipFS{
+		fileServer: http.FileServer(http.FS(staticFiles)),
+		fs:         staticFiles,
+	}
+
 	routes := web.mux
 	routes.HandleFunc("/notify", web.DoNotify)
 	routes.HandleFunc("/comment", web.DoComment)
@@ -62,14 +70,45 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/me", web.PageMe)
 	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
+	routes.Handle("/s/", http.StripPrefix("/s/", staticFileServer))
 	routes.HandleFunc("/", web.PageIndex)
 }
 
 func (web *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("%s %s %s\n", web.CurrentTime().UTC().Format(time.StampMilli), req.Method, req.URL.Path)
+	web.logger.Printf("%s %s", req.Method, req.URL)
 	web.app.Replay(true)
 	w.Header().Set("X-T", web.CurrentTime().Format(time.RFC3339))
 	web.mux.ServeHTTP(w, req)
+}
+
+type WithGzipFS struct {
+	fileServer http.Handler
+	fs         fs.FS
+}
+
+func (z *WithGzipFS) FileExists(path string) bool {
+	_, err := z.fs.Open(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func (z *WithGzipFS) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	uncompressed := req.URL.Path
+	compressed := req.URL.Path + ".gz"
+	if strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") && z.FileExists(compressed) {
+		contentType := mime.TypeByExtension(filepath.Ext(uncompressed))
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Content-Type", contentType)
+		req.URL.Path = compressed
+		z.fileServer.ServeHTTP(w, req)
+	} else {
+		z.fileServer.ServeHTTP(w, req)
+	}
 }
 
 func (web *WebApp) AdminOnly(next http.HandlerFunc) http.HandlerFunc {
