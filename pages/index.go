@@ -117,8 +117,8 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 		Language: "en",
 		Head: []g.Node{
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
-			Script(Src("/s/htmx.min.js")),
-			Script(Src("/s/htmx-sse.js")),
+			Script(Src("/s/htmx.min.a651db4.js")),
+			Script(Src("/s/htmx-sse.713ef8d.js")),
 			Link(Href("/s/main.css"), Rel("stylesheet")),
 		},
 		Body: []g.Node{

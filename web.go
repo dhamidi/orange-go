@@ -53,6 +53,10 @@ func (web *WebApp) registerRoutes() {
 	staticFileServer := &WithGzipFS{
 		fileServer: http.FileServer(http.FS(staticFiles)),
 		fs:         staticFiles,
+		cacheForever: []string{
+			"htmx.min.a651db4.js.gz",
+			"htmx-sse.713ef8d.js.gz",
+		},
 	}
 
 	routes := web.mux
@@ -82,8 +86,18 @@ func (web *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 type WithGzipFS struct {
-	fileServer http.Handler
-	fs         fs.FS
+	fileServer   http.Handler
+	fs           fs.FS
+	cacheForever []string
+}
+
+func (z *WithGzipFS) shouldCache(path string) bool {
+	for _, p := range z.cacheForever {
+		if strings.HasSuffix(path, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func (z *WithGzipFS) FileExists(path string) bool {
@@ -105,10 +119,11 @@ func (z *WithGzipFS) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Header().Set("Content-Type", contentType)
 		req.URL.Path = compressed
-		z.fileServer.ServeHTTP(w, req)
-	} else {
-		z.fileServer.ServeHTTP(w, req)
 	}
+	if z.shouldCache(req.URL.Path) {
+		w.Header().Set("Cache-Control", "max-age=31536000, immutable")
+	}
+	z.fileServer.ServeHTTP(w, req)
 }
 
 func (web *WebApp) AdminOnly(next http.HandlerFunc) http.HandlerFunc {
