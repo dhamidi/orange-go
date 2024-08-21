@@ -104,7 +104,7 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL) g.Node {
 		})),
 		g.Iff(loadMore != nil, func() g.Node {
 			return Div(Class("mt-4"),
-				ButtonLink("More", "/?after=10"),
+				ButtonLink("More", loadMore.String()),
 			)
 		}),
 	)

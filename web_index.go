@@ -41,7 +41,7 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 
 	if len(q.Submissions) == 10 {
 		pageData.LoadMore = &url.URL{Path: req.URL.Path}
-		pageData.LoadMore.Query().Add("after", strconv.Itoa(q.After+10))
+		pageData.LoadMore.RawQuery = (&url.Values{"after": []string{strconv.Itoa(q.After + 10)}}).Encode()
 	}
 
 	if isHX(req) {
