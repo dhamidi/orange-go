@@ -120,6 +120,7 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			Script(Src("/s/htmx.min.a651db4.js")),
 			Script(Src("/s/htmx-sse.713ef8d.js")),
+			Script(Src("/s/alpine-3.14.1.min.cd31b85.js"), Defer()),
 			Link(Href("/s/"+context.Stylesheet), Rel("stylesheet")),
 		},
 		Body: []g.Node{

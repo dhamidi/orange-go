@@ -60,6 +60,7 @@ build_styles
 collect_assets \
   htmx-sse.js \
   htmx.min.js \
+  alpine-3.14.1.min.js \
   main.css
 
 

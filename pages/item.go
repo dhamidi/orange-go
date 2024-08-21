@@ -62,15 +62,17 @@ func CommentLink(itemID string, formTarget string) g.Node {
 
 func CommentForm(itemID string, state *FormState) g.Node {
 	return Form(
+		g.Attr("x-data", `{ n: 0 }`),
 		hx.Post("/comment"),
 		hx.Swap("this"),
 		Action("/comment"), Method("POST"),
 		Div(
 			Class("flex flex-row space-around"),
 			Input(Type("hidden"), Name("itemID"), Value(itemID)),
-			InlineText("text", state),
+			InlineText("text", state, g.Attr("x-on:keyup", `n = $event.target.value.length`)),
 			InlineSubmitButton("Reply"),
 		),
+		P(Class("text-xs text-gray-400 my-1"), g.Attr("x-text", `(3000 - n) + " characters left"`)),
 	)
 }
 
