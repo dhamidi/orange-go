@@ -51,12 +51,9 @@ func NewWebApp(app *App, shell *Shell) *WebApp {
 func (web *WebApp) registerRoutes() {
 	staticFiles, _ := fs.Sub(embeddedStaticFiles, "static")
 	staticFileServer := &WithGzipFS{
-		fileServer: http.FileServer(http.FS(staticFiles)),
-		fs:         staticFiles,
-		cacheForever: []string{
-			"htmx.min.a651db4.js.gz",
-			"htmx-sse.713ef8d.js.gz",
-		},
+		fileServer:   http.FileServer(http.FS(staticFiles)),
+		fs:           staticFiles,
+		cacheForever: IMMUTABLE_ASSETS,
 	}
 
 	routes := web.mux
@@ -160,7 +157,14 @@ func (web *WebApp) CurrentUser(req *http.Request) *User {
 
 func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 	currentUser := web.CurrentUser(req)
+	stylesheet := "/s/main.css"
+	for _, asset := range IMMUTABLE_ASSETS {
+		if strings.HasPrefix(asset, "main.") && strings.HasSuffix(asset, ".css.gz") {
+			stylesheet = asset[:len(asset)-len(".gz")]
+		}
+	}
 	pageData := &pages.PageData{
+		Stylesheet:  stylesheet,
 		CurrentUser: nil,
 		FormState:   pages.NewFormState(),
 	}

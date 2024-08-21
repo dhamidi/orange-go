@@ -58,6 +58,7 @@ type User struct {
 }
 
 type PageData struct {
+	Stylesheet  string
 	CurrentUser *User
 	FormState   *FormState
 	BackTo      *url.URL
@@ -119,7 +120,7 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
 			Script(Src("/s/htmx.min.a651db4.js")),
 			Script(Src("/s/htmx-sse.713ef8d.js")),
-			Link(Href("/s/main.css"), Rel("stylesheet")),
+			Link(Href("/s/"+context.Stylesheet), Rel("stylesheet")),
 		},
 		Body: []g.Node{
 			Class("m-0 flex min-h-screen flex-col"),

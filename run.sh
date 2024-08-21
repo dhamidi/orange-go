@@ -3,7 +3,9 @@
 if ! [[ -f .env ]]; then
   touch .env
 fi
-find . -name '*.go' | entr -crs '
+find . -name '*.go' |
+  grep -vF assets.go |
+  entr -crs '
   ./build.sh &&
   date && 
   set -a && 

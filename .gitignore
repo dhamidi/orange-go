@@ -13,3 +13,6 @@
 # Generated files
 /static/main.css
 /static/main.css.gz
+/static/main.*.css
+/static/main.*.css.gz
+/assets.go
