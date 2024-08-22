@@ -133,3 +133,10 @@ func (self *Content) HandleQuery(query Query) error {
 		return ErrQueryNotAccepted
 	}
 }
+
+func (self *Content) Inspect() map[string]any {
+	return map[string]any{
+		"content": self.state,
+	}
+}
+

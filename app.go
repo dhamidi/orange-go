@@ -103,3 +103,13 @@ func (app *App) HandleQuery(query Query) error {
 	}
 	return ErrQueryNotAccepted
 }
+
+func (app *App) ExposeState(globals map[string]any) {
+	for _, handler := range app.queryHandlers {
+		if state, ok := handler.(interface{ Inspect() map[string]any }); ok {
+			for key, value := range state.Inspect() {
+				globals[key] = value
+			}
+		}
+	}
+}

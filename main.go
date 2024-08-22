@@ -170,6 +170,7 @@ func main() {
 		for _, starter := range starters {
 			starter.Start()
 		}
+    go replServer(app)
 		fmt.Printf("%s\n", http.ListenAndServe(conninfo, web))
 	default:
 		fmt.Printf("unknown subcommand: %s\n", subcommand)

@@ -120,3 +120,9 @@ func (self *Auth) HandleQuery(query Query) error {
 		return ErrQueryNotAccepted
 	}
 }
+
+func (self *Auth) Inspect() map[string]any {
+	return map[string]any{
+		"auth": self.state,
+	}
+}

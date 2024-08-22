@@ -12,6 +12,13 @@ require (
 )
 
 require (
+	golang.org/x/text v0.16.0 // indirect
+	gopkg.in/readline.v1 v1.0.0-20160726135117-62c6fe619375 // indirect
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
+)
+
+require (
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/robertkrimen/otto v0.4.0
 	golang.org/x/net v0.23.0 // indirect
 )
