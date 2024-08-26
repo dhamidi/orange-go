@@ -7,18 +7,18 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/robertkrimen/otto"
+	"github.com/dop251/goja"
 )
 
 //go:embed repl.js
 var prelude string
 
 func replServer(app *App) {
-	vm := otto.New()
+	vm := goja.New()
 	globals := map[string]any{}
 	app.ExposeState(globals)
 	vm.Set("g", globals)
-	vm.Run(prelude)
+	vm.RunString(prelude)
 	listener, err := net.Listen("tcp", "127.0.0.1:8088")
 	if err != nil {
 		fmt.Printf("[repl] failed to listen: %s\n", err)
@@ -35,7 +35,7 @@ func replServer(app *App) {
 	}
 }
 
-func repl(vm *otto.Otto, conn net.Conn) {
+func repl(vm *goja.Runtime, conn net.Conn) {
 	lines := bufio.NewScanner(conn)
 	conn.Write([]byte("> "))
 	enc := json.NewEncoder(conn)
@@ -44,7 +44,7 @@ func repl(vm *otto.Otto, conn net.Conn) {
 		if line == "exit" {
 			break
 		}
-		result, err := vm.Run(line)
+		result, err := vm.RunString(line)
 		if err != nil {
 			fmt.Fprintf(conn, "error: %s\n", err)
 			continue

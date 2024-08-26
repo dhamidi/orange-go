@@ -3,6 +3,7 @@ module orange
 go 1.23.0
 
 require (
+	github.com/dop251/goja v0.0.0-20240822155948-fa6d1ed5e4b6
 	github.com/google/uuid v1.6.0
 	github.com/jimmysawczuk/recon v0.0.0-20240723135856-0ca09c7808a6
 	github.com/maragudk/gomponents v0.20.4
@@ -12,6 +13,9 @@ require (
 )
 
 require (
+	github.com/dlclark/regexp2 v1.11.4 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/readline.v1 v1.0.0-20160726135117-62c6fe619375 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
