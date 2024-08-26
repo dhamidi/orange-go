@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -92,6 +93,14 @@ func main() {
 		sessionID, err := shell.LoginWithMagicLink(values)
 		run(err, "log-in-with-magic <magic>")
 		fmt.Printf("%s\n", sessionID)
+	case "hide-submission":
+		pv(2, "sessionID", &values)
+		pv(3, "itemID", &values)
+		run(shell.HideSubmission(values), "hide-submission <session-id> <item-id>")
+	case "unhide-submission":
+		pv(2, "sessionID", &values)
+		pv(3, "itemID", &values)
+		run(shell.UnhideSubmission(values), "unhide-submission <session-id> <item-id>")
 	case "comment":
 		pv(2, "sessionID", &values)
 		pv(3, "itemID", &values)
@@ -111,6 +120,15 @@ func main() {
 		session, err := shell.FindSession(values)
 		run(err, "find-session <session-id>")
 		fmt.Printf("%s", session.ID)
+  case "frontpage":
+		values.Set("sessionID", p(2))
+		submissions, err := shell.GetFrontpage(values)
+    run(err, "frontpage <session-id>")
+    for _, s := range submissions {
+      status := "active"
+      if s.Hidden { status = "hidden" }
+      fmt.Printf("%s %.2f %-8s %s\n", s.ItemID, s.Score, status, s.Url)
+    }
 	case "log":
 		pv(2, "after", &values)
 		run(shell.List(values, os.Stdout))
@@ -170,7 +188,7 @@ func main() {
 		for _, starter := range starters {
 			starter.Start()
 		}
-    go replServer(app)
+		go replServer(shell, log.New(os.Stdout, "[repl] ", log.LstdFlags))
 		fmt.Printf("%s\n", http.ListenAndServe(conninfo, web))
 	default:
 		fmt.Printf("unknown subcommand: %s\n", subcommand)

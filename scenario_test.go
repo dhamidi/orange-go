@@ -172,6 +172,22 @@ func (t *TestContext) setMagicDomains(domains ...string) Command {
 	}
 }
 
+func (t *TestContext) hideSubmission(id string) Command {
+	return &HideSubmission{
+		ItemID:   id,
+		HiddenBy: t.Viewer,
+		HiddenAt: time.Now(),
+	}
+}
+
+func (t *TestContext) unhideSubmission(id string) Command {
+	return &UnhideSubmission{
+		ItemID:     id,
+		UnhiddenBy: t.Viewer,
+		UnhiddenAt: time.Now(),
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }

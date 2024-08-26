@@ -162,6 +162,26 @@ func (s *Shell) FindSession(params Parameters) (*Session, error) {
 	return q.Session, nil
 }
 
+func (s *Shell) GetFrontpage(params Parameters) ([]*Submission, error) {
+	sessionID := params.Get("sessionID")
+	var viewer *string = nil
+	if sessionID != "" {
+		q := NewFindSessionQuery(sessionID)
+		if err := s.App.HandleQuery(q); err != nil {
+			return nil, fmt.Errorf("get-frontpage: failed to find session %q: %w\n", sessionID, err)
+		}
+		if q.Session == nil {
+			return nil, ErrSessionNotFound
+		}
+		*viewer = q.Session.Username
+	}
+	frontpage := NewFrontpageQuery(viewer)
+	if err := s.App.HandleQuery(frontpage); err != nil {
+		return nil, fmt.Errorf("get-frontpage: %w\n", err)
+	}
+	return frontpage.Submissions, nil
+}
+
 func (s *Shell) UnskipCommands(params Parameters) error {
 	ids := GetAllValues(params, "id")
 	reviser, ok := s.App.Commands.(CommandReviser)
@@ -271,6 +291,49 @@ func (s *Shell) Upvote(params Parameters) error {
 	}
 	if err := s.App.HandleCommand(submit); err != nil {
 		return fmt.Errorf("upvote: %w", err)
+	}
+	return nil
+}
+
+func (s *Shell) HideSubmission(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
+	q := NewFindSessionQuery(sessionID)
+	if err := s.App.HandleQuery(q); err != nil {
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
+	}
+	if q.Session == nil {
+		return ErrSessionNotFound
+	}
+
+	submit := &HideSubmission{
+		ItemID:   itemID,
+		HiddenBy: q.Session.Username,
+		HiddenAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(submit); err != nil {
+		return fmt.Errorf("hide-submission: %w", err)
+	}
+	return nil
+}
+
+func (s *Shell) UnhideSubmission(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
+	q := NewFindSessionQuery(sessionID)
+	if err := s.App.HandleQuery(q); err != nil {
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
+	}
+	if q.Session == nil {
+		return ErrSessionNotFound
+	}
+	submit := &UnhideSubmission{
+		ItemID:     itemID,
+		UnhiddenBy: q.Session.Username,
+		UnhiddenAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(submit); err != nil {
+		return fmt.Errorf("hide-submission: %w", err)
 	}
 	return nil
 }

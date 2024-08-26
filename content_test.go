@@ -166,3 +166,28 @@ func Test_OnFrontpage_SubmissionsCanBePaged_WithAfter(t *testing.T) {
 		t.Fatalf("expected %d submissions, got %d", exp, act)
 	}
 }
+
+func Test_OnFrontpage_SubmissionsCanBeHidden(t *testing.T) {
+	scenario := setup(t)
+	for i := range 10 {
+		postLink := scenario.postLink("https://news.ycombinator.com", fmt.Sprintf("%d", i))
+		postLink.SubmittedAt = postLink.SubmittedAt.Add(-time.Duration(10-i) * 24 * time.Hour)
+		scenario.must(postLink)
+	}
+
+	scenario.must(scenario.hideSubmission(scenario.PostIDs[0]))
+	submissions := scenario.frontpageAfter(0)
+	hiddenSubmission := mustFind(submissions, "ItemID", scenario.PostIDs[0])
+
+	if act, exp := hiddenSubmission.Hidden, true; act != exp {
+		t.Fatalf("expected submission to be hidden, got %v", act)
+	}
+
+	scenario.must(scenario.unhideSubmission(scenario.PostIDs[0]))
+	submissions = scenario.frontpageAfter(0)
+	unhiddenSubmission := mustFind(submissions, "ItemID", scenario.PostIDs[0])
+
+	if act, exp := unhiddenSubmission.Hidden, false; act != exp {
+		t.Fatalf("expected submission to be not hidden, got %v", act)
+	}
+}

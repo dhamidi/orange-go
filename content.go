@@ -22,6 +22,7 @@ type Submission struct {
 	Title          string
 	SubmittedAt    time.Time
 	Preview        *SubmissionPreview
+	Hidden         bool
 	VoteCount      int
 	Score          float32
 	ViewerHasVoted bool
@@ -111,6 +112,10 @@ func (self *Content) HandleCommand(cmd Command) error {
 		return self.handleUpvoteSubmission(cmd)
 	case *PostComment:
 		return self.handlePostComment(cmd)
+	case *HideSubmission:
+		return self.handleHideSubmission(cmd)
+	case *UnhideSubmission:
+		return self.handleUnhideSubmission(cmd)
 	}
 	return ErrCommandNotAccepted
 }
@@ -139,4 +144,3 @@ func (self *Content) Inspect() map[string]any {
 		"content": self.state,
 	}
 }
-

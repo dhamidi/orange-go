@@ -26,6 +26,11 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 				title = *submission.Preview.Title
 			}
 		}
+
+		if submission.Hidden {
+			continue
+		}
+
 		templateData = append(templateData, &pages.Submission{
 			ItemID:         submission.ItemID,
 			Title:          submission.Title,

@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/dop251/goja"
@@ -13,24 +14,25 @@ import (
 //go:embed repl.js
 var prelude string
 
-func replServer(app *App) {
+func replServer(shell *Shell, logger *log.Logger) {
 	vm := goja.New()
 	globals := map[string]any{}
-	app.ExposeState(globals)
+	shell.App.ExposeState(globals)
+	vm.Set("shell", shell)
 	vm.Set("g", globals)
 	vm.RunString(prelude)
 	listener, err := net.Listen("tcp", "127.0.0.1:8088")
 	if err != nil {
-		fmt.Printf("[repl] failed to listen: %s\n", err)
+		logger.Printf("failed to listen: %s\n", err)
 		return
 	}
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("[repl] failed to accept: %s\n", err)
+			logger.Printf("failed to accept: %s\n", err)
 			continue
 		}
-		fmt.Printf("[repl] accepted connection from %s\n", conn.RemoteAddr())
+		logger.Printf("accepted connection from %s\n", conn.RemoteAddr())
 		go repl(vm, conn)
 	}
 }
