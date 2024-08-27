@@ -15,6 +15,7 @@ func UpvoteButton(itemID string) g.Node {
 		Class("inline"),
 		hx.Boost("true"),
 		hx.Target("this"),
+		hx.PushURL("false"),
 		Action("/upvote"),
 		Method("POST"),
 		Input(

@@ -6,7 +6,7 @@ import (
 	"orange/pages"
 )
 
-func (web *WebApp) DoHideSubmission(w http.ResponseWriter, req *http.Request) {
+func (web *WebApp) DoUnhideSubmission(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		http.Redirect(w, req, "/", http.StatusSeeOther)
 		return
@@ -16,9 +16,9 @@ func (web *WebApp) DoHideSubmission(w http.ResponseWriter, req *http.Request) {
 	itemID := req.Form.Get("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 
-	err := web.shell.HideSubmission(req.Form)
+	err := web.shell.UnhideSubmission(req.Form)
 	if errors.Is(err, ErrSessionNotFound) {
-		pages.HideSubmissionButton(itemID).Render(w)
+		pages.UnhideSubmissionButton(itemID).Render(w)
 		return
 	}
 
@@ -27,6 +27,6 @@ func (web *WebApp) DoHideSubmission(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pages.UnhideSubmissionButton(itemID).Render(w)
+	pages.HideSubmissionButton(itemID).Render(w)
 	return
 }

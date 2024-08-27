@@ -106,7 +106,8 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) 
 							isAdmin,
 							g.Group([]g.Node{
 								g.Text(" | "),
-								HideSubmissionButton(s.ItemID, s.Hidden),
+								g.If(s.Hidden, UnhideSubmissionButton(s.ItemID)),
+								g.If(!s.Hidden, HideSubmissionButton(s.ItemID)),
 							}),
 						),
 					),

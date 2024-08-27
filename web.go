@@ -69,6 +69,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/reset-password", web.PageResetPassword)
 	routes.HandleFunc("/login/{magic}", web.PageLoginWithMagic)
 	routes.HandleFunc("/me", web.PageMe)
+	routes.HandleFunc("/admin/a/unhide-submission", web.AdminOnly(web.DoUnhideSubmission))
 	routes.HandleFunc("/admin/a/hide-submission", web.AdminOnly(web.DoHideSubmission))
 	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
