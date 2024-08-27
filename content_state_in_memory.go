@@ -170,3 +170,8 @@ func (self *InMemoryContentState) HasVotedFor(user string, itemIDs []string) ([]
 	}
 	return result, nil
 }
+
+func (self *InMemoryContentState) GetSubmissionForComment(commentID TreeID) (*Submission, error) {
+	submissionID := commentID[0]
+	return self.GetSubmission(submissionID)
+}

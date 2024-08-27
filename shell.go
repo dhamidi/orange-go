@@ -338,6 +338,49 @@ func (s *Shell) UnhideSubmission(params Parameters) error {
 	return nil
 }
 
+func (s *Shell) HideComment(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
+	q := NewFindSessionQuery(sessionID)
+	if err := s.App.HandleQuery(q); err != nil {
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
+	}
+	if q.Session == nil {
+		return ErrSessionNotFound
+	}
+
+	submit := &HideComment{
+		CommentID: NewTreeID(itemID),
+		HiddenBy:  q.Session.Username,
+		HiddenAt:  s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(submit); err != nil {
+		return fmt.Errorf("hide-comment: %w", err)
+	}
+	return nil
+}
+
+func (s *Shell) UnhideComment(params Parameters) error {
+	sessionID := params.Get("sessionID")
+	itemID := params.Get("itemID")
+	q := NewFindSessionQuery(sessionID)
+	if err := s.App.HandleQuery(q); err != nil {
+		return fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
+	}
+	if q.Session == nil {
+		return ErrSessionNotFound
+	}
+	unhide := &UnhideComment{
+		CommentID:  NewTreeID(itemID),
+		UnhiddenBy: q.Session.Username,
+		UnhiddenAt: s.CurrentTime(),
+	}
+	if err := s.App.HandleCommand(unhide); err != nil {
+		return fmt.Errorf("unhide-comment: %w", err)
+	}
+	return nil
+}
+
 func (s *Shell) Submit(params Parameters) error {
 	sessionID := params.Get("sessionID")
 	title := params.Get("title")

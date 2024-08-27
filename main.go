@@ -101,6 +101,14 @@ func main() {
 		pv(2, "sessionID", &values)
 		pv(3, "itemID", &values)
 		run(shell.UnhideSubmission(values), "unhide-submission <session-id> <item-id>")
+	case "hide-comment":
+		pv(2, "sessionID", &values)
+		pv(3, "itemID", &values)
+		run(shell.HideComment(values), "hide-comment <session-id> <item-id>")
+	case "unhide-comment":
+		pv(2, "sessionID", &values)
+		pv(3, "itemID", &values)
+		run(shell.UnhideComment(values), "unhide-comment <session-id> <item-id>")
 	case "comment":
 		pv(2, "sessionID", &values)
 		pv(3, "itemID", &values)
@@ -120,15 +128,17 @@ func main() {
 		session, err := shell.FindSession(values)
 		run(err, "find-session <session-id>")
 		fmt.Printf("%s", session.ID)
-  case "frontpage":
+	case "frontpage":
 		values.Set("sessionID", p(2))
 		submissions, err := shell.GetFrontpage(values)
-    run(err, "frontpage <session-id>")
-    for _, s := range submissions {
-      status := "active"
-      if s.Hidden { status = "hidden" }
-      fmt.Printf("%s %.2f %-8s %s\n", s.ItemID, s.Score, status, s.Url)
-    }
+		run(err, "frontpage <session-id>")
+		for _, s := range submissions {
+			status := "active"
+			if s.Hidden {
+				status = "hidden"
+			}
+			fmt.Printf("%s %.2f %-8s %s\n", s.ItemID, s.Score, status, s.Url)
+		}
 	case "log":
 		pv(2, "after", &values)
 		run(shell.List(values, os.Stdout))

@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var _ ContentState = (*PersistentContentState)(nil)
+
 type PersistentContentState struct {
 	filename string
 }
@@ -176,4 +178,8 @@ func (self *PersistentContentState) HasVotedFor(user string, itemIDs []string) (
 	}
 
 	return voted, nil
+}
+
+func (self *PersistentContentState) GetSubmissionForComment(commentID TreeID) (*Submission, error) {
+	panic("unimplemented")
 }

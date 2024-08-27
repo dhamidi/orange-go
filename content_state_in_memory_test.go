@@ -45,3 +45,24 @@ func Test_PutComment_InsertsCommentAndBumpsCount(t *testing.T) {
 		t.Errorf("expected 2 comments, got %d", submission.CommentCount)
 	}
 }
+
+func Test_GetSubmissionForComment_ReturnsSubmissionForComment(t *testing.T) {
+	submission := &Submission{
+		ItemID:      "item",
+		Submitter:   "alice",
+		SubmittedAt: time.Now(),
+	}
+	comment := &Comment{
+		ParentID: NewTreeID("item"),
+		Index:    0,
+		Author:   "alice",
+		Content:  "content",
+		PostedAt: time.Now(),
+	}
+	submission.Comments = append(submission.Comments, comment)
+
+	c := submission.Comment(NewTreeID("item", "0"))
+	if c == nil {
+		t.Fatalf("expected comment, got nil")
+	}
+}

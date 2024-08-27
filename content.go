@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strconv"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type ContentState interface {
 	RecordVote(vote *Vote) error
 	HasVotedFor(user string, itemIDs []string) ([]bool, error)
 	PutComment(comment *Comment) error
+	GetSubmissionForComment(commentID TreeID) (*Submission, error)
 }
 
 type Submission struct {
@@ -28,6 +30,24 @@ type Submission struct {
 	ViewerHasVoted bool
 	CommentCount   int
 	Comments       []*Comment
+}
+
+func (s *Submission) Comment(id TreeID) *Comment {
+	moves := id[1:]
+	current := s.Comments
+	for ci, move := range moves {
+		i, _ := strconv.Atoi(move)
+		if i >= len(current) {
+			return nil
+		}
+		if ci == len(moves)-1 {
+			return current[i]
+		}
+
+		current = current[i].Children
+	}
+
+	return nil
 }
 
 type SubmissionPreview struct {
@@ -49,14 +69,20 @@ type Comment struct {
 	Content  string
 	Author   string
 	PostedAt time.Time
+	Hidden   bool
 	Index    int
 	Children []*Comment
 }
 
-func (c *Comment) CommentableID() string  { return c.ID().String() }
-func (c *Comment) WrittenAt() time.Time   { return c.PostedAt }
-func (c *Comment) CommentAuthor() string  { return c.Author }
-func (c *Comment) CommentContent() string { return c.Content }
+func (c *Comment) CommentableID() string { return c.ID().String() }
+func (c *Comment) WrittenAt() time.Time  { return c.PostedAt }
+func (c *Comment) CommentAuthor() string { return c.Author }
+func (c *Comment) CommentContent() string {
+	if c.Hidden {
+		return "[hidden]"
+	}
+	return c.Content
+}
 func (c *Comment) AllChildren() []interface{} {
 	asInterface := make([]interface{}, len(c.Children))
 	for i := range c.Children {
@@ -116,6 +142,10 @@ func (self *Content) HandleCommand(cmd Command) error {
 		return self.handleHideSubmission(cmd)
 	case *UnhideSubmission:
 		return self.handleUnhideSubmission(cmd)
+	case *HideComment:
+		return self.handleHideComment(cmd)
+	case *UnhideComment:
+		return self.handleUnhideComment(cmd)
 	}
 	return ErrCommandNotAccepted
 }
