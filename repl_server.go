@@ -5,8 +5,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/dop251/goja"
 )
@@ -37,21 +39,44 @@ func replServer(shell *Shell, logger *log.Logger) {
 	}
 }
 
+func printFunc(conn io.Writer) func(goja.FunctionCall) goja.Value {
+	return func(call goja.FunctionCall) goja.Value {
+		for _, arg := range call.Arguments {
+			fmt.Fprintf(conn, "%s\n", arg.String())
+		}
+		return goja.Undefined()
+	}
+}
+
 func repl(vm *goja.Runtime, conn net.Conn) {
 	lines := bufio.NewScanner(conn)
 	conn.Write([]byte("> "))
+	vm.Set("print", printFunc(conn))
+	mode := "inspect"
 	enc := json.NewEncoder(conn)
 	for lines.Scan() {
 		line := lines.Text()
 		if line == "exit" {
 			break
 		}
+		if strings.HasPrefix(line, ",mode ") {
+			fields := strings.Split(line, " ")
+			if len(fields) > 1 {
+				mode = fields[1]
+			}
+			conn.Write([]byte("\n> "))
+			continue
+		}
 		result, err := vm.RunString(line)
 		if err != nil {
 			fmt.Fprintf(conn, "error: %s\n", err)
 			continue
 		}
-		enc.Encode(result)
+		if mode == "json" {
+			enc.Encode(result)
+		} else {
+			conn.Write([]byte(result.ToString().String()))
+		}
 		conn.Write([]byte("\n> "))
 	}
 	conn.Close()
