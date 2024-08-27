@@ -34,7 +34,7 @@ func RequestMagicForm(form *FormState) g.Node {
 	)
 }
 
-func ForbiddenMagicPage(path string) g.Node {
+func ForbiddenMagicPage(path string, context *PageData) g.Node {
 	return Page(
 		"The Orange Website",
 		path,
@@ -42,7 +42,7 @@ func ForbiddenMagicPage(path string) g.Node {
 			Class("flex flex-row justify-center items-center py-12"),
 			P(Class("text-xl font-semibold"), g.Textf("Forbidden Magic 🧙")),
 		),
-		&PageData{},
+		context,
 	)
 }
 

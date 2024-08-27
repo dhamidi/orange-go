@@ -37,7 +37,8 @@ func (web *WebApp) PageLoginWithMagic(w http.ResponseWriter, req *http.Request) 
 
 	sessionID, err := web.shell.LoginWithMagicLink(params)
 	if err != nil {
-		pages.ForbiddenMagicPage(req.URL.Path).Render(w)
+		pageData := web.PageData(req)
+		pages.ForbiddenMagicPage(req.URL.Path, pageData).Render(w)
 		return
 	}
 
