@@ -17,7 +17,9 @@ Additionally tailwindcss is required.
 
 The `setup.sh` script does its best to set up your environment.
 
-To run the application in development mode, use `./run.sh`: it automatically compiles all assets and restarts the application on changes.
+To run the application in development mode, use `./run.sh`: it
+automatically compiles all assets and restarts the application on
+changes.
 
 To run tests in watching mode, use `./test.sh`
 
