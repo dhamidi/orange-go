@@ -115,8 +115,12 @@ func Test_OnFrontpage_SubmissionsAreSortedByScores_ThenSubmissionTime(t *testing
 	// Since ten days have passed, it will have a score of 5 * 0.9**10 = 1.74.
 	//
 	// The submission three days ago gets 3 upvotes, and will have a higher score.
+	//
+	// The submission two days ago got two comments, counting as half an upvote each.
 	scenario.upvoteN(scenario.PostIDs[0], 5)
 	scenario.upvoteN(scenario.PostIDs[10-3], 3)
+	scenario.must(scenario.commentOn(scenario.PostIDs[10-2], "second"))
+	scenario.must(scenario.commentOn(scenario.PostIDs[10-2], "second"))
 
 	submissions := scenario.frontpage()
 	for _, s := range submissions {
@@ -129,12 +133,21 @@ func Test_OnFrontpage_SubmissionsAreSortedByScores_ThenSubmissionTime(t *testing
 	}
 	first := submissions[0]
 	second := submissions[1]
+	third := submissions[2]
 
 	if f, s := first.Score, second.Score; f < s {
 		t.Fatalf("Expected first score to be higher than second, got %.2f < %.2f", f, s)
 	}
 
-	for i := 2; i < 10; i += 2 {
+	if s, th := second.Score, third.Score; s < th {
+		t.Fatalf("Expected second score to be higher than third, got %.2f < %.2f", s, th)
+	}
+
+	if act, exp := third.Score, float32(2*0.5)*0.9; exp-act > 0.02 {
+		t.Fatalf("Expected third score to be within %.2f of %.2f, got %.2f", 0.02, exp, act)
+	}
+
+	for i := 3; i < 10-1; i += 2 {
 		if a, b := submissions[i].SubmittedAt, submissions[i+1].SubmittedAt; b.After(a) {
 			t.Fatalf("submission %d: Expected %s to be before %s",
 				i,
@@ -188,6 +201,6 @@ func Test_OnFrontpage_SubmissionsCanBeHidden(t *testing.T) {
 	unhiddenSubmission := mustFind(submissions, "ItemID", scenario.PostIDs[0])
 
 	if act, exp := unhiddenSubmission.Hidden, false; act != exp {
-		t.Fatalf("expected submission to be not hidden, got %v", act)
+		t.Fatalf("expected submission to be hidden, got %v", act)
 	}
 }

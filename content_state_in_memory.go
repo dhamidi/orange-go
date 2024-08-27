@@ -25,9 +25,10 @@ func (self *InMemoryContentState) scoreSubmissions() {
 
 func (self *InMemoryContentState) score(s *Submission) {
 	voteCount := len(self.VotesByItemID[s.ItemID])
+	commentCount := s.CommentCount
 	age := float64(self.LastSubmissionAt.Sub(s.SubmittedAt)) / float64(24*time.Hour)
 	decay := float32(math.Pow(0.9, age))
-	s.Score = float32(voteCount) * decay
+	s.Score = (float32(voteCount) + float32(commentCount)*0.5) * decay
 }
 
 func (self *InMemoryContentState) refreshFrontpage() {

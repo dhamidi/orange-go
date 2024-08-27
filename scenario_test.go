@@ -44,6 +44,15 @@ func (t *TestContext) postLink(url, title string) *PostLink {
 	}
 }
 
+func (t *TestContext) commentOn(itemID string, content string) Command {
+	return &PostComment{
+		ParentID: NewTreeID(itemID),
+		Content:  content,
+		Author:   t.Viewer,
+		PostedAt: time.Now(),
+	}
+}
+
 func (t *TestContext) signup(username, password string) Command {
 	t.t.Helper()
 	passwordHash, err := HashPassword(password)
