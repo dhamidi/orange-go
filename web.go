@@ -69,6 +69,7 @@ func (web *WebApp) registerRoutes() {
 	routes.HandleFunc("/reset-password", web.PageResetPassword)
 	routes.HandleFunc("/login/{magic}", web.PageLoginWithMagic)
 	routes.HandleFunc("/me", web.PageMe)
+	routes.HandleFunc("/admin/a/hide-submission", web.AdminOnly(web.DoHideSubmission))
 	routes.HandleFunc("/admin/events", web.AdminOnly(web.PageEventLog))
 	routes.Handle("/favicon.ico", http.FileServer(http.FS(staticFiles)))
 	routes.Handle("/s/", http.StripPrefix("/s/", staticFileServer))
@@ -163,14 +164,22 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 			stylesheet = asset[:len(asset)-len(".gz")]
 		}
 	}
+
 	pageData := &pages.PageData{
 		Stylesheet:  stylesheet,
 		CurrentUser: nil,
+		IsAdmin:     false,
 		FormState:   pages.NewFormState(),
 	}
 	if currentUser != nil {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}
+		// fetching roles is on a best-effort basis
+		roles, err := web.shell.GetUserRoles(&url.Values{"username": []string{currentUser.Username}})
+		if err == nil && slices.Contains(roles, UserRoleAdmin) {
+			pageData.IsAdmin = true
+		}
 	}
+
 	backToRaw := ""
 	if backTo := req.FormValue("back_to"); backTo != "" {
 		backToRaw = backTo
@@ -181,6 +190,7 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 	if err == nil {
 		pageData.BackTo = backToURL
 	}
+
 	return pageData
 }
 

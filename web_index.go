@@ -27,14 +27,18 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		if submission.Hidden {
+		if submission.Hidden && !pageData.IsAdmin {
 			continue
 		}
 
+		if len(templateData) >= 10 {
+			break
+		}
 		templateData = append(templateData, &pages.Submission{
 			ItemID:         submission.ItemID,
 			Title:          submission.Title,
 			GeneratedTitle: title,
+			Hidden:         submission.Hidden,
 			Url:            submission.Url,
 			SubmittedAt:    submission.SubmittedAt,
 			Submitter:      submission.Submitter,
@@ -44,13 +48,13 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
-	if len(q.Submissions) == 10 {
+	if len(templateData) >= 10 {
 		pageData.LoadMore = &url.URL{Path: req.URL.Path}
 		pageData.LoadMore.RawQuery = (&url.Values{"after": []string{strconv.Itoa(q.After + 10)}}).Encode()
 	}
 
 	if isHX(req) {
-		pages.SubmissionList(templateData, pageData.LoadMore).Render(w)
+		pages.SubmissionList(templateData, pageData.LoadMore, pageData.IsAdmin).Render(w)
 		return
 	}
 

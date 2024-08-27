@@ -19,10 +19,24 @@ func NewFrontpageQuery(viewer *string) *GetFrontpageSubmissions {
 }
 
 func (self *Content) getFrontpageSubmissions(query *GetFrontpageSubmissions) error {
-	submissions, err := self.state.TopNSubmissions(10, query.After)
+	after := query.After
+	submissions, err := self.state.TopNSubmissions(10, after)
 	if err != nil {
 		return err
 	}
+
+	for all(submissions, func(s *Submission) bool { return s.Hidden }) {
+		moreSubmissions, err := self.state.TopNSubmissions(10, after+10)
+		if err != nil {
+			break
+		}
+		if len(moreSubmissions) == 0 {
+			break
+		}
+		after += 10
+		submissions = append(submissions, moreSubmissions...)
+	}
+
 	if query.Viewer != nil {
 		viewer := *query.Viewer
 		itemIDs := make([]string, len(submissions))

@@ -28,6 +28,7 @@ type Submission struct {
 	Url            string
 	Title          string
 	GeneratedTitle string
+	Hidden         bool
 	VoteCount      int
 	CommentCount   int
 	CanVote        bool
@@ -60,6 +61,7 @@ type User struct {
 type PageData struct {
 	Stylesheet  string
 	CurrentUser *User
+	IsAdmin     bool
 	FormState   *FormState
 	BackTo      *url.URL
 	LoadMore    *url.URL
@@ -74,10 +76,10 @@ func (p *PageData) Username() *string {
 }
 
 func IndexPage(path string, submissions []*Submission, context *PageData) g.Node {
-	return Page("The Orange Website", path, SubmissionList(submissions, context.LoadMore), context)
+	return Page("The Orange Website", path, SubmissionList(submissions, context.LoadMore, context.IsAdmin), context)
 }
 
-func SubmissionList(submissions []*Submission, loadMore *url.URL) g.Node {
+func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) g.Node {
 	counter := 0
 	return Container(
 		Class("flex flex-col space-y-2"),
@@ -100,6 +102,13 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL) g.Node {
 						TimeLabel(s.SubmittedAt),
 						g.Text(" | "),
 						A(Href("/item?id="+s.ItemID), g.Textf("%d comments", s.CommentCount)),
+						g.If(
+							isAdmin,
+							g.Group([]g.Node{
+								g.Text(" | "),
+								HideSubmissionButton(s.ItemID, s.Hidden),
+							}),
+						),
 					),
 				))
 		})),
