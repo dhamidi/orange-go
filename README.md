@@ -17,13 +17,32 @@ Additionally tailwindcss is required.
 
 The `setup.sh` script does its best to set up your environment.
 
+To run the application in development mode, use `./run.sh`: it automatically compiles all assets and restarts the application on changes.
+
+To run tests in watching mode, use `./test.sh`
+
+### Adding new commands
+
+To generate the skeleton of a command, run:
+
+```shell
+# go run gen/command.go <module> <command>
+go run gen/command.go auth LockOutUser
+# auth_lock_out_user.go
+```
+
+After that you'll still need to register the command in `<module>.go`
+and implement the shell wrapper in `shell.go`.
+
 ## Features
 
 - User signup and login,
+- Logging in via magic email link (requires Postmark),
 - Posting submissions,
 - Upvoting submissions,
 - Commenting on submissions and on submission comments (no limit to nesting)
 - Fetching OpenGraph data for submitted URLs
+- Hiding/unhiding comments and submissions
 
 ## Operation
 
@@ -116,8 +135,6 @@ There are two ways to verify an email address:
 2. a user verifies their email address by clicking a link sent to the email address
 
 **TODO**: allow changing password on behalf of the users.
-
-**TODO**: allow users to reset their password.
 
 ## Module: Content
 
