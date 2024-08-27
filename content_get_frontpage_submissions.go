@@ -20,13 +20,11 @@ func NewFrontpageQuery(viewer *string) *GetFrontpageSubmissions {
 
 func (self *Content) getFrontpageSubmissions(query *GetFrontpageSubmissions) error {
 	after := query.After
-	submissions, err := self.state.TopNSubmissions(10, after)
-	if err != nil {
-		return err
-	}
+	result := []*Submission{}
 
-	for all(submissions, func(s *Submission) bool { return s.Hidden }) {
-		moreSubmissions, err := self.state.TopNSubmissions(10, after+10)
+	nonHiddenCount := 0
+	for nonHiddenCount < 10 {
+		moreSubmissions, err := self.state.TopNSubmissions(10, after)
 		if err != nil {
 			break
 		}
@@ -34,20 +32,28 @@ func (self *Content) getFrontpageSubmissions(query *GetFrontpageSubmissions) err
 			break
 		}
 		after += 10
-		submissions = append(submissions, moreSubmissions...)
+		for _, s := range moreSubmissions {
+			if anyOf(result, func(r *Submission) bool { return r.ItemID == s.ItemID }) {
+				continue
+			}
+			if !s.Hidden {
+				nonHiddenCount++
+			}
+			result = append(result, s)
+		}
 	}
 
 	if query.Viewer != nil {
 		viewer := *query.Viewer
-		itemIDs := make([]string, len(submissions))
-		for i, s := range submissions {
+		itemIDs := make([]string, len(result))
+		for i, s := range result {
 			itemIDs[i] = s.ItemID
 		}
 		voted, _ := self.state.HasVotedFor(viewer, itemIDs)
-		for i, s := range submissions {
+		for i, s := range result {
 			s.ViewerHasVoted = voted[i]
 		}
 	}
-	query.Submissions = submissions
+	query.Submissions = result
 	return nil
 }
