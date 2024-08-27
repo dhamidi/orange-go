@@ -164,7 +164,7 @@ func (s *Shell) FindSession(params Parameters) (*Session, error) {
 
 func (s *Shell) GetFrontpage(params Parameters) ([]*Submission, error) {
 	sessionID := params.Get("sessionID")
-	var viewer *string = nil
+	var viewer string
 	if sessionID != "" {
 		q := NewFindSessionQuery(sessionID)
 		if err := s.App.HandleQuery(q); err != nil {
@@ -173,9 +173,9 @@ func (s *Shell) GetFrontpage(params Parameters) ([]*Submission, error) {
 		if q.Session == nil {
 			return nil, ErrSessionNotFound
 		}
-		*viewer = q.Session.Username
+		viewer = q.Session.Username
 	}
-	frontpage := NewFrontpageQuery(viewer)
+	frontpage := NewFrontpageQuery(&viewer)
 	if err := s.App.HandleQuery(frontpage); err != nil {
 		return nil, fmt.Errorf("get-frontpage: %w\n", err)
 	}
