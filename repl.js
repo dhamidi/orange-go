@@ -41,4 +41,7 @@ function help() {
 help.functions = {
   submissions: submissions,
   prop: prop,
+  linkIsLive: {
+    help: "linkIsLive(String) -> Bool - Returns true if the link is reachable via HEAD",
+  },
 };

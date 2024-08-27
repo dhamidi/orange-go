@@ -27,10 +27,18 @@ func (web *WebApp) handleSubmission(w http.ResponseWriter, req *http.Request) {
 	pageData := web.PageData(req)
 	sessionID, _ := req.Cookie("session_id")
 	req.Form.Set("sessionID", sessionID.Value)
-	err := web.shell.Submit(req.Form)
+
 	form := pages.NewFormState()
 	form.SetValue("title", req.Form.Get("title"))
 	form.SetValue("url", req.Form.Get("url"))
+
+	if !LinkIsLive(form.Values["url"]) {
+		form.AddError("url", "URL is not reachable")
+		pages.SubmitPage(req.URL.Path, form, pageData).Render(w)
+		return
+	}
+
+	err := web.shell.Submit(req.Form)
 	if errors.Is(err, ErrEmptyTitle) {
 		form.AddError("title", ErrEmptyTitle.Error())
 	}

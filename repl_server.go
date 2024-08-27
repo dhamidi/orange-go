@@ -51,6 +51,7 @@ func printFunc(conn io.Writer) func(goja.FunctionCall) goja.Value {
 func repl(vm *goja.Runtime, conn net.Conn) {
 	lines := bufio.NewScanner(conn)
 	conn.Write([]byte("> "))
+	vm.Set("linkIsLive", LinkIsLive)
 	vm.Set("print", printFunc(conn))
 	mode := "inspect"
 	enc := json.NewEncoder(conn)
