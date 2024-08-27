@@ -29,7 +29,7 @@ func (web *WebApp) PageLogin(w http.ResponseWriter, req *http.Request) {
 func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	sessionID, err := web.shell.Login(req.Form)
-	if errors.Is(err, ErrInvalidCredentials) || errors.Is(err, ErrSessionNotFound) {
+	if errors.Is(err, ErrInvalidCredentials) || errors.Is(err, ErrSessionNotFound) || errors.Is(err, ErrPasswordMismatch) {
 		query := url.Values{}
 		query.Set("error", "invalid-credentials")
 		query.Set("username", req.FormValue("username"))
