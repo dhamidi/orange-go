@@ -171,6 +171,7 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 		CurrentUser: nil,
 		IsAdmin:     false,
 		FormState:   pages.NewFormState(),
+		MainOnly:    isHX(req),
 	}
 	if currentUser != nil {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}

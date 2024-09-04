@@ -8,6 +8,12 @@ import (
 
 func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
+	sessionID, _ := req.Cookie("session_id")
+	if sessionID == nil || sessionID.Value == "" {
+		web.LogInFirst(w, req)
+		return
+	}
+
 	if req.Method == "GET" && isHX(req) {
 		pages.CommentForm(req.FormValue("itemID"), pages.NewFormState()).Render(w)
 		return
@@ -18,7 +24,6 @@ func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sessionID, _ := req.Cookie("session_id")
 	itemID := req.FormValue("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 

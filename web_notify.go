@@ -37,7 +37,6 @@ func NewNotificationFromCommand(cmd Command, app *App) (*Notification, bool) {
 func (web *WebApp) DoNotify(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
 	commands, err := web.app.Commands.After(0)
 	if err != nil {
 		http.Error(w, "failed to subscribe", http.StatusInternalServerError)
@@ -47,22 +46,27 @@ func (web *WebApp) DoNotify(w http.ResponseWriter, req *http.Request) {
 	for cmd := range commands {
 		lastSeen = cmd.ID
 	}
+	web.logger.Printf("notify(%d): from %s", lastSeen, req.RemoteAddr)
+	everySecond := time.NewTicker(1 * time.Second)
 	for {
-		time.Sleep(1 * time.Second)
-		newCommands, err := web.app.Commands.After(lastSeen)
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		for cmd := range newCommands {
-			notification, ok := NewNotificationFromCommand(cmd.Message, web.app)
-			if ok {
-				fmt.Fprintf(w, "event: notify\n")
-				fmt.Fprintf(w, "data: %s\n\n", notification)
-				w.(http.Flusher).Flush()
+		select {
+		case <-req.Context().Done():
+			web.logger.Printf("notify(%d): from %s: done", lastSeen, req.RemoteAddr)
+			return
+		case <-everySecond.C:
+			newCommands, err := web.app.Commands.After(lastSeen)
+			if err != nil {
+				continue
 			}
-			lastSeen = cmd.ID
+			for cmd := range newCommands {
+				notification, ok := NewNotificationFromCommand(cmd.Message, web.app)
+				if ok {
+					fmt.Fprintf(w, "event: notify\n")
+					fmt.Fprintf(w, "data: %s\n\n", notification)
+					w.(http.Flusher).Flush()
+				}
+				lastSeen = cmd.ID
+			}
 		}
 	}
 }

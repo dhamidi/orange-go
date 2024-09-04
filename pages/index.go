@@ -65,6 +65,7 @@ type PageData struct {
 	FormState   *FormState
 	BackTo      *url.URL
 	LoadMore    *url.URL
+	MainOnly    bool
 }
 
 func (p *PageData) Username() *string {
@@ -115,13 +116,16 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) 
 		})),
 		g.Iff(loadMore != nil, func() g.Node {
 			return Div(Class("mt-4"),
-				ButtonLink("More", loadMore.String()),
+				ButtonLink("More", loadMore.String(), hx.Target("main"), hx.Get(loadMore.String())),
 			)
 		}),
 	)
 }
 
 func Page(title, path string, body g.Node, context *PageData) g.Node {
+	if context.MainOnly {
+		return body
+	}
 	// HTML5 boilerplate document
 	return c.HTML5(c.HTML5Props{
 		Title:    title,
@@ -134,9 +138,9 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 			Link(Href("/s/"+context.Stylesheet), Rel("stylesheet")),
 		},
 		Body: []g.Node{
-			Class("m-0 flex min-h-screen flex-col"),
+			Class("m-0 font-mono flex min-h-screen flex-col"),
 			Navbar(path, context),
-			NotificationBar(),
+			// NotificationBar() currently disabled because I couldn't find a way to close EventSources after navigation.
 			Main(Class("flex-auto"), body),
 			PageFooter(),
 		},
@@ -149,13 +153,14 @@ type PageLink struct {
 }
 
 func NotificationBar() g.Node {
-	return Div(
+	bar := Div(
 		hx.Ext("sse"),
 		g.Attr("sse-connect", "/notify"),
 		g.Attr("sse-swap", "notify"),
 		Class("min-h-8 bg-amber-200 mb-4 p-2 text-sm text-center font-mono"),
 		g.Text("Notifications will appear here"),
 	)
+	return bar
 }
 
 func Navbar(currentPath string, context *PageData) g.Node {
@@ -184,7 +189,7 @@ func NavbarLink(path, text string, active bool) g.Node {
 	return A(Href(path), g.Text(text),
 		// Apply CSS classes conditionally
 		c.Classes{
-			"px-5 py-2 rounded-md text-sm font-medium focus:outline-none focus:text-white focus:bg-orange-700": true,
+			"px-5 py-2 text-sm font-medium focus:outline-none focus:text-white focus:bg-orange-700": true,
 			"text-white bg-orange-700":                        active,
 			"text-white hover:text-white hover:bg-orange-700": !active,
 		},
@@ -193,10 +198,6 @@ func NavbarLink(path, text string, active bool) g.Node {
 
 func Container(children ...g.Node) g.Node {
 	return Div(Class("sm:max-w-16 md:max-w-7xl mx-auto px-2 sm:px-6 lg:px-8"), g.Group(children))
-}
-
-func Prose(children ...g.Node) g.Node {
-	return Div(Class("prose"), g.Group(children))
 }
 
 func humanBytes(n uint64) string {
