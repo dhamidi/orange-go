@@ -10,6 +10,7 @@ type GetFrontpageSubmissions struct {
 func (q *GetFrontpageSubmissions) QueryName() string {
 	return "GetFrontpageSubmissions"
 }
+func (q *GetFrontpageSubmissions) Result() any { return q.Submissions }
 
 func NewFrontpageQuery(viewer *string) *GetFrontpageSubmissions {
 	return &GetFrontpageSubmissions{

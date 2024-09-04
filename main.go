@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,7 +9,25 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kr/pretty"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+type Dict map[string]string
+
+func (d Dict) Get(key string) string {
+	return d[key]
+}
+
+func DictFromList(list []string) Dict {
+	d := Dict{}
+	for i := 0; i < len(list); i += 2 {
+		d[list[i]] = list[i+1]
+	}
+	return d
+}
 
 func p(i int) string {
 	if len(os.Args) > i {
@@ -200,8 +219,46 @@ func main() {
 		}
 		go replServer(shell, log.New(os.Stdout, "[repl] ", log.LstdFlags))
 		fmt.Printf("%s\n", http.ListenAndServe(conninfo, web))
+	case "do", "get":
+		if len(os.Args) < 3 {
+			fmt.Printf("usage: %s <command> <args...>\n", subcommand)
+			os.Exit(1)
+		}
+		name := toCamelCase(os.Args[2])
+		args := os.Args[3:]
+		headers := Dict{"Kind": "command", "Name": name}
+
+		if subcommand == "get" {
+			headers["Kind"] = "query"
+		}
+		parameters := Dict{}
+		for i := 0; i < len(args)-1; i += 2 {
+			dest := parameters
+			key := args[i]
+			value := args[i+1]
+			if strings.HasPrefix(key, "-") {
+				key = key[1:]
+				dest = headers
+			}
+			dest[key] = value
+		}
+		fmt.Printf("> headers: %#v\n> parameters: %#v\n", headers, parameters)
+		req := &Request{Headers: headers, Parameters: parameters}
+		result, err := shell.Do(context.Background(), req)
+		fmt.Printf("< result: %# v\n", pretty.Formatter(result))
+		fmt.Printf("< err: %s\n", err)
 	default:
 		fmt.Printf("unknown subcommand: %s\n", subcommand)
 		os.Exit(1)
 	}
+}
+
+var titler = cases.Title(language.AmericanEnglish)
+
+func toCamelCase(s string) string {
+	components := strings.Split(s, "-")
+	for i := range components {
+		components[i] = titler.String(components[i])
+	}
+	return strings.Join(components, "")
 }

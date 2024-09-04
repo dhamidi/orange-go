@@ -6,6 +6,7 @@ type FindSubmission struct {
 }
 
 func (q *FindSubmission) QueryName() string { return "FindSubmission" }
+func (q *FindSubmission) Result() any       { return q.Submission }
 
 func NewFindSubmission(itemID string) *FindSubmission {
 	return &FindSubmission{ItemID: itemID}

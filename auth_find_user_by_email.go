@@ -6,6 +6,7 @@ type FindUserByEmail struct {
 }
 
 func (q *FindUserByEmail) QueryName() string { return "FindUserByEmail" }
+func (q *FindUserByEmail) Result() any       { return q.User }
 
 func NewFindUserByEmail(email string) *FindUserByEmail {
 	return &FindUserByEmail{Email: email}

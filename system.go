@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"iter"
 )
 
@@ -52,6 +53,7 @@ func init() {
 
 type Query interface {
 	QueryName() string
+	Result() any
 }
 
 type Serializer interface {
@@ -147,3 +149,37 @@ func (l *NullCommandLog) After(id int) (iter.Seq[*PersistedCommand], error) {
 	return func(yield func(c *PersistedCommand) bool) {}, nil
 }
 func (l *NullCommandLog) Length() (int, error) { return 0, nil }
+
+type Parameters interface {
+	Get(key string) string
+}
+
+// Request expresses a request for the system to perform a command or query.
+type Request struct {
+	Headers    Parameters
+	Parameters Parameters
+	Body       io.Reader
+}
+
+type RequestKind int
+
+const (
+	CommandRequest = iota
+	QueryRequest
+	UnknownRequest
+)
+
+func (req *Request) Kind() RequestKind {
+	switch req.Headers.Get("Kind") {
+	case "command":
+		return CommandRequest
+	case "query":
+		return QueryRequest
+	default:
+		return UnknownRequest
+	}
+}
+
+func (req *Request) Name() string {
+	return req.Headers.Get("Name")
+}

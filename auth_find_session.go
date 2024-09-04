@@ -15,6 +15,8 @@ func (q *FindSession) QueryName() string {
 	return "FindSession"
 }
 
+func (q *FindSession) Result() any { return q.Session }
+
 func NewFindSessionQuery(id string) *FindSession {
 	return &FindSession{ID: id}
 }

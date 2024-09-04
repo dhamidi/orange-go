@@ -12,6 +12,8 @@ func (q *FindUserPasswordHash) QueryName() string {
 	return "FindUserPasswordHash"
 }
 
+func (q *FindUserPasswordHash) Result() any { return q.PasswordHash }
+
 func NewFindUserPasswordHash(username, password string) *FindUserPasswordHash {
 	return &FindUserPasswordHash{Username: username, Password: password}
 }

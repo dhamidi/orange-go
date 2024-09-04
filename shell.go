@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -11,22 +13,64 @@ import (
 	"github.com/google/uuid"
 )
 
+type QueryBuilder = func(shell *Shell, req *Request, ctx context.Context) (Query, error)
+type CommandBuilder = func(shell *Shell, req *Request, ctx context.Context) (Command, error)
+type ContextBuilder = func(shell *Shell, req *Request, ctx context.Context) (context.Context, error)
+
 type Shell struct {
-	CurrentTime func() time.Time
-	NewID       func() string
-	App         *App
+	CurrentTime     func() time.Time
+	NewID           func() string
+	App             *App
+	QueryBuilders   map[string]QueryBuilder
+	CommandBuilders map[string]CommandBuilder
+	ContextBuilders []ContextBuilder
 }
+
+var DefaultShellCommands = map[string]CommandBuilder{}
+var DefaultShellQueries = map[string]QueryBuilder{}
 
 func NewDefaultShell(app *App) *Shell {
-	return &Shell{
-		CurrentTime: time.Now,
-		NewID:       uuid.NewString,
-		App:         app,
+	s := &Shell{
+		CurrentTime:     time.Now,
+		NewID:           uuid.NewString,
+		App:             app,
+		QueryBuilders:   map[string]QueryBuilder{},
+		CommandBuilders: map[string]CommandBuilder{},
+		ContextBuilders: []ContextBuilder{},
 	}
+	s.Use(CurrentTime).Use(CurrentSession)
+	for name, builder := range DefaultShellCommands {
+		s.RegisterCommand(name, builder)
+	}
+	for name, builder := range DefaultShellQueries {
+		s.RegisterQuery(name, builder)
+	}
+
+	return s
 }
 
-type Parameters interface {
-	Get(key string) string
+func init() {
+	DefaultShellCommands["PostLink"] = BuildPostLinkCommand
+	DefaultShellCommands["Signup"] = BuildSignupCommand
+	DefaultShellCommands["Login"] = BuildLoginCommand
+	DefaultShellCommands["RequestMagicLinkLogin"] = BuildRequestMagicLinkLoginCommand
+	DefaultShellCommands["LoginWithMagicLink"] = BuildLoginWithMagicLinkCommand
+	DefaultShellCommands["LinkVerifiedEmailToUser"] = BuildLinkVerifiedEmailToUserCommand
+	DefaultShellCommands["SetAdminUsers"] = BuildSetAdminUsersCommand
+	DefaultShellCommands["SetMagicDomains"] = BuildSetMagicDomainsCommand
+	DefaultShellCommands["Upvote"] = BuildUpvoteCommand
+	DefaultShellCommands["HideSubmission"] = BuildHideSubmissionCommand
+	DefaultShellCommands["UnhideSubmission"] = BuildUnhideSubmissionCommand
+	DefaultShellCommands["Hide"] = BuildHideCommentCommand
+	DefaultShellCommands["Unhide"] = BuildUnhideCommentCommand
+	DefaultShellCommands["PostLink"] = BuildPostLinkCommand
+	DefaultShellCommands["RequestPasswordReset"] = BuildRequestPasswordResetCommand
+	DefaultShellCommands["ResetPassword"] = BuildResetPasswordCommand
+	DefaultShellCommands["Comment"] = BuildCommentCommand
+
+	DefaultShellQueries["GetUserRoles"] = BuildGetUserRolesQuery
+	DefaultShellQueries["FindSession"] = BuildFindSessionQuery
+	DefaultShellQueries["GetFrontpage"] = BuildGetFrontpageQuery
 }
 
 func GetAllValues(p Parameters, key string) []string {
@@ -59,6 +103,25 @@ func (s *Shell) Signup(params Parameters) error {
 	return nil
 }
 
+func BuildSignupCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	createdAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("signup: %w", err)
+	}
+	username := req.Parameters.Get("username")
+	password := req.Parameters.Get("password")
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		return nil, fmt.Errorf("signup: failed to  hash password: %w", err)
+	}
+	return &SignUpUser{
+		Username:     username,
+		PasswordHash: *passwordHash,
+		CreatedAt:    createdAt,
+	}, nil
+}
+
 func (s *Shell) Login(params Parameters) (string, error) {
 	username, password := params.Get("username"), params.Get("password")
 	q := NewFindUserPasswordHash(username, password)
@@ -81,6 +144,29 @@ func (s *Shell) Login(params Parameters) (string, error) {
 	return login.SessionID, nil
 }
 
+func BuildLoginCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	createdAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("login: %w", err)
+	}
+	username := req.Parameters.Get("username")
+	password := req.Parameters.Get("password")
+	q := NewFindUserPasswordHash(username, password)
+	if err := shell.App.HandleQuery(q); err != nil {
+		return nil, fmt.Errorf("login: failed to hash password: %w", err)
+	}
+	if q.PasswordHash == nil {
+		return nil, ErrInvalidCredentials
+	}
+	return &LogInUser{
+		Username:     username,
+		PasswordHash: *q.PasswordHash,
+		AttemptedAt:  createdAt,
+		SessionID:    shell.NewID(),
+	}, nil
+}
+
 func (s *Shell) RequestMagicLinkLogin(params Parameters) (string, error) {
 	email := params.Get("email")
 	magic := s.NewID()
@@ -93,6 +179,20 @@ func (s *Shell) RequestMagicLinkLogin(params Parameters) (string, error) {
 		return "", fmt.Errorf("request-magic-link-login: %w\n", err)
 	}
 	return request.Magic, nil
+}
+func BuildRequestMagicLinkLoginCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	createdAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("request-magic-link-login: %w", err)
+	}
+	email := req.Parameters.Get("email")
+	magic := shell.NewID()
+	return &RequestMagicLinkLogin{
+		Email:       email,
+		Magic:       magic,
+		RequestedAt: createdAt,
+	}, nil
 }
 
 func (s *Shell) LoginWithMagicLink(params Parameters) (string, error) {
@@ -109,6 +209,21 @@ func (s *Shell) LoginWithMagicLink(params Parameters) (string, error) {
 	return sessionID, nil
 }
 
+func BuildLoginWithMagicLinkCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	createdAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("login-with-magic-link: %w", err)
+	}
+	magic := req.Parameters.Get("magic")
+	sessionID := shell.NewID()
+	return &LogInWithMagic{
+		SessionID:   sessionID,
+		Magic:       magic,
+		AttemptedAt: createdAt,
+	}, nil
+}
+
 func (s *Shell) LinkVerifiedEmailToUser(params Parameters) error {
 	username := params.Get("username")
 	email := params.Get("email")
@@ -123,6 +238,21 @@ func (s *Shell) LinkVerifiedEmailToUser(params Parameters) error {
 	return nil
 }
 
+func BuildLinkVerifiedEmailToUserCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	createdAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("link-verified-email-to-user: %w", err)
+	}
+	username := req.Parameters.Get("username")
+	email := req.Parameters.Get("email")
+	return &LinkVerifiedEmailToUser{
+		Username: username,
+		Email:    email,
+		LinkedAt: createdAt,
+	}, nil
+}
+
 func (s *Shell) SetAdminUsers(params Parameters) error {
 	usernames := GetAllValues(params, "username")
 	setAdmin := &SetAdminUsers{Users: usernames}
@@ -130,6 +260,11 @@ func (s *Shell) SetAdminUsers(params Parameters) error {
 		return fmt.Errorf("set-admin-users: %w\n", err)
 	}
 	return nil
+}
+
+func BuildSetAdminUsersCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	usernames := GetAllValues(req.Parameters, "username")
+	return &SetAdminUsers{Users: usernames}, nil
 }
 
 func (s *Shell) SetMagicDomains(params Parameters) error {
@@ -141,6 +276,11 @@ func (s *Shell) SetMagicDomains(params Parameters) error {
 	return nil
 }
 
+func BuildSetMagicDomainsCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	domains := GetAllValues(req.Parameters, "domain")
+	return &SetMagicDomains{Domains: domains}, nil
+}
+
 func (s *Shell) GetUserRoles(params Parameters) ([]UserRole, error) {
 	username := params.Get("username")
 	q := NewGetUserRolesQuery(username)
@@ -148,6 +288,11 @@ func (s *Shell) GetUserRoles(params Parameters) ([]UserRole, error) {
 		return nil, fmt.Errorf("get-user-roles: failed to get user roles: %w\n", err)
 	}
 	return q.Roles, nil
+}
+
+func BuildGetUserRolesQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	username := req.Parameters.Get("username")
+	return NewGetUserRolesQuery(username), nil
 }
 
 func (s *Shell) FindSession(params Parameters) (*Session, error) {
@@ -160,6 +305,11 @@ func (s *Shell) FindSession(params Parameters) (*Session, error) {
 		return nil, ErrSessionNotFound
 	}
 	return q.Session, nil
+}
+
+func BuildFindSessionQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	sessionID := req.Parameters.Get("sessionID")
+	return NewFindSessionQuery(sessionID), nil
 }
 
 func (s *Shell) GetFrontpage(params Parameters) ([]*Submission, error) {
@@ -180,6 +330,15 @@ func (s *Shell) GetFrontpage(params Parameters) ([]*Submission, error) {
 		return nil, fmt.Errorf("get-frontpage: %w\n", err)
 	}
 	return frontpage.Submissions, nil
+}
+
+func BuildGetFrontpageQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	env := NewRequestEnv(ctx)
+	var viewer string
+	if session := env.CurrentSession(); session != nil {
+		viewer = session.Username
+	}
+	return NewFrontpageQuery(&viewer), nil
 }
 
 func (s *Shell) UnskipCommands(params Parameters) error {
@@ -295,6 +454,23 @@ func (s *Shell) Upvote(params Parameters) error {
 	return nil
 }
 
+func BuildUpvoteCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	votedAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("upvote: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &UpvoteSubmission{
+		ItemID:  req.Parameters.Get("itemID"),
+		Voter:   session.Username,
+		VotedAt: votedAt,
+	}, nil
+}
+
 func (s *Shell) HideSubmission(params Parameters) error {
 	sessionID := params.Get("sessionID")
 	itemID := params.Get("itemID")
@@ -317,6 +493,23 @@ func (s *Shell) HideSubmission(params Parameters) error {
 	return nil
 }
 
+func BuildHideSubmissionCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	hiddenAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("hide-submission: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &HideSubmission{
+		ItemID:   req.Parameters.Get("itemID"),
+		HiddenBy: session.Username,
+		HiddenAt: hiddenAt,
+	}, nil
+}
+
 func (s *Shell) UnhideSubmission(params Parameters) error {
 	sessionID := params.Get("sessionID")
 	itemID := params.Get("itemID")
@@ -336,6 +529,23 @@ func (s *Shell) UnhideSubmission(params Parameters) error {
 		return fmt.Errorf("hide-submission: %w", err)
 	}
 	return nil
+}
+
+func BuildUnhideSubmissionCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	unhiddenAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("unhide-submission: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &UnhideSubmission{
+		ItemID:     req.Parameters.Get("itemID"),
+		UnhiddenBy: session.Username,
+		UnhiddenAt: unhiddenAt,
+	}, nil
 }
 
 func (s *Shell) HideComment(params Parameters) error {
@@ -360,6 +570,23 @@ func (s *Shell) HideComment(params Parameters) error {
 	return nil
 }
 
+func BuildHideCommentCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	hiddenAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("hide-comment: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &HideComment{
+		CommentID: NewTreeID(req.Parameters.Get("itemID")),
+		HiddenBy:  session.Username,
+		HiddenAt:  hiddenAt,
+	}, nil
+}
+
 func (s *Shell) UnhideComment(params Parameters) error {
 	sessionID := params.Get("sessionID")
 	itemID := params.Get("itemID")
@@ -379,6 +606,23 @@ func (s *Shell) UnhideComment(params Parameters) error {
 		return fmt.Errorf("unhide-comment: %w", err)
 	}
 	return nil
+}
+
+func BuildUnhideCommentCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	unhiddenAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("unhide-comment: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &UnhideComment{
+		CommentID:  NewTreeID(req.Parameters.Get("itemID")),
+		UnhiddenBy: session.Username,
+		UnhiddenAt: unhiddenAt,
+	}, nil
 }
 
 func (s *Shell) Submit(params Parameters) error {
@@ -405,6 +649,25 @@ func (s *Shell) Submit(params Parameters) error {
 	return nil
 }
 
+func BuildPostLinkCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	submittedAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("post-link: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &PostLink{
+		ItemID:      req.Parameters.Get("itemID"),
+		Submitter:   session.Username,
+		Title:       req.Parameters.Get("title"),
+		Url:         req.Parameters.Get("url"),
+		SubmittedAt: submittedAt,
+	}, nil
+}
+
 func (s *Shell) RequestPasswordReset(params Parameters) (string, error) {
 	email := params.Get("email")
 	token := s.NewID()
@@ -426,6 +689,28 @@ func (s *Shell) RequestPasswordReset(params Parameters) (string, error) {
 	return token, nil
 }
 
+func BuildRequestPasswordResetCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	requestedAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("request-password-reset: %w", err)
+	}
+	email := req.Parameters.Get("email")
+	q := NewFindUserByEmail(email)
+	if err := shell.App.HandleQuery(q); err != nil {
+		return nil, fmt.Errorf("request-password-reset: %w", err)
+	}
+	if q.User == nil {
+		return nil, ErrUserNotFound
+	}
+	return &RequestPasswordReset{
+		Username:    q.User.Username,
+		Email:       email,
+		Token:       shell.NewID(),
+		RequestedAt: requestedAt,
+	}, nil
+}
+
 func (s *Shell) ResetPassword(params Parameters) error {
 	token := params.Get("token")
 	newPassword, err := HashPassword(params.Get("password"))
@@ -441,6 +726,23 @@ func (s *Shell) ResetPassword(params Parameters) error {
 		return fmt.Errorf("failed to reset password: %w\n", err)
 	}
 	return nil
+}
+
+func BuildResetPasswordCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	requestedAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("reset-password: %w", err)
+	}
+	password, err := HashPassword(req.Parameters.Get("password"))
+	if err != nil {
+		return nil, fmt.Errorf("reset-password: failed to hash password: %w", err)
+	}
+	return &ResetPassword{
+		Token:       req.Parameters.Get("token"),
+		NewPassword: *password,
+		AttemptedAt: requestedAt,
+	}, nil
 }
 
 func (s *Shell) Comment(params Parameters) error {
@@ -463,6 +765,168 @@ func (s *Shell) Comment(params Parameters) error {
 	}
 	if err := s.App.HandleCommand(commentOn); err != nil {
 		return fmt.Errorf("failed to post comment: %w\n", err)
+	}
+	return nil
+}
+
+func BuildCommentCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	postedAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("comment: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	return &PostComment{
+		ParentID: NewTreeID(req.Parameters.Get("itemID")),
+		Author:   session.Username,
+		Content:  req.Parameters.Get("text"),
+		PostedAt: postedAt,
+	}, nil
+}
+
+var ErrUnkownRequestKind = errors.New("unknown request kind")
+
+func (s *Shell) Do(ctx context.Context, req *Request) (any, error) {
+	kind := req.Kind()
+	if kind == UnknownRequest {
+		return nil, ErrUnkownRequestKind
+	}
+
+	if kind == CommandRequest {
+		command, err := s.buildCommand(req, ctx)
+		if err != nil {
+			return nil, err
+		}
+		return nil, s.App.HandleCommand(command)
+	}
+
+	if kind == QueryRequest {
+		query, err := s.buildQuery(req, ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.App.HandleQuery(query); err != nil {
+			return nil, err
+		}
+		return query.Result(), nil
+	}
+	panic("unreachable")
+}
+
+func (s *Shell) buildCommand(req *Request, ctx context.Context) (Command, error) {
+	name := req.Name()
+	commandBuilder, ok := s.CommandBuilders[name]
+	if !ok {
+		return nil, fmt.Errorf("BuildCommand(%q): %w", name, ErrCommandNotAccepted)
+	}
+	enhancedCtx, err := s.buildContext(req, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("BuildCommand(%q): %w", name, err)
+	}
+	return commandBuilder(s, req, enhancedCtx)
+}
+
+func (s *Shell) buildQuery(req *Request, ctx context.Context) (Query, error) {
+	name := req.Name()
+	queryBuilder, ok := s.QueryBuilders[name]
+	if !ok {
+		return nil, fmt.Errorf("BuildQuery(%q): %w", name, ErrQueryNotAccepted)
+	}
+	enhancedCtx, err := s.buildContext(req, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("BuildQuery(%q): %w", name, err)
+	}
+	return queryBuilder(s, req, enhancedCtx)
+}
+
+func (s *Shell) buildContext(req *Request, ctx context.Context) (context.Context, error) {
+	enhancedCtx := ctx
+	for _, builder := range s.ContextBuilders {
+		var err error
+		enhancedCtx, err = builder(s, req, enhancedCtx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return enhancedCtx, nil
+}
+
+func (s *Shell) RegisterCommand(name string, builder CommandBuilder) *Shell {
+	s.CommandBuilders[name] = builder
+	return s
+}
+func (s *Shell) RegisterQuery(name string, builder QueryBuilder) *Shell {
+	s.QueryBuilders[name] = builder
+	return s
+}
+
+func (s *Shell) Use(ctxb ContextBuilder) *Shell {
+	s.ContextBuilders = append(s.ContextBuilders, ctxb)
+	return s
+}
+
+type requestEnv = int
+
+var ErrNotInEnv = errors.New("not in environment")
+
+const (
+	EnvCurrentTime requestEnv = iota
+	EnvCurrentSession
+)
+
+type RequestEnv struct{ context.Context }
+
+func NewRequestEnv(ctx context.Context) RequestEnv {
+	return RequestEnv{ctx}
+}
+
+func (e *RequestEnv) CurrentTime() (time.Time, error) {
+	return CurrentTimeFromEnv(e.Context)
+}
+func (e *RequestEnv) CurrentSession() *Session {
+	return CurrentSessionFromEnv(e.Context)
+}
+
+// CurrentTime adds `EnvCurrentTime` to the context with the current time.
+func CurrentTime(shell *Shell, req *Request, ctx context.Context) (context.Context, error) {
+	return context.WithValue(ctx, EnvCurrentTime, shell.CurrentTime()), nil
+}
+
+// CurrentTimeFromEnv returns the current time from the context.
+func CurrentTimeFromEnv(ctx context.Context) (time.Time, error) {
+	v := ctx.Value(EnvCurrentTime)
+	if asTime, ok := v.(time.Time); ok {
+		return asTime, nil
+	}
+	return time.Time{}, ErrNotInEnv
+}
+
+// CurrentSession adds `EnvCurrentSession` to the context with the current session.
+//
+// The session is determined by a header called `sessionID`.
+func CurrentSession(shell *Shell, req *Request, ctx context.Context) (context.Context, error) {
+	sessionID := req.Headers.Get("sessionID")
+	q := NewFindSessionQuery(sessionID)
+	if err := shell.App.HandleQuery(q); err != nil {
+		return nil, fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
+	}
+	session := q.Session
+	if session == nil {
+		return ctx, nil
+	}
+
+	return context.WithValue(ctx, EnvCurrentSession, session), nil
+}
+
+// CurrentSessionFromEnv returns the current session from the context.
+// If no session is found, it returns nil.
+func CurrentSessionFromEnv(ctx context.Context) *Session {
+	v := ctx.Value(EnvCurrentSession)
+	if asSession, ok := v.(*Session); ok {
+		return asSession
 	}
 	return nil
 }

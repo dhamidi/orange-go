@@ -9,6 +9,8 @@ func (q *FindUserBySessionID) QueryName() string {
 	return "FindUserBySessionID"
 }
 
+func (q *FindUserBySessionID) Result() any { return q.User }
+
 func NewFindUserBySessionIDQuery(sessionID string) *FindUserBySessionID {
 	return &FindUserBySessionID{SessionID: sessionID}
 }

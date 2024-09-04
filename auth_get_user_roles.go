@@ -18,6 +18,8 @@ func (q *GetUserRoles) QueryName() string {
 	return "GetUserRoles"
 }
 
+func (q *GetUserRoles) Result() any { return q.Roles }
+
 func NewGetUserRolesQuery(username string) *GetUserRoles {
 	return &GetUserRoles{Username: username}
 }
