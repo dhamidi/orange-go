@@ -28,13 +28,22 @@ func (web *WebApp) PageLogin(w http.ResponseWriter, req *http.Request) {
 
 func (web *WebApp) handleLogIn(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
-	sessionID, err := web.shell.Login(req.Form)
+	sessionID := web.SessionIDGenerator()
+	req.Form.Set("sessionID", sessionID)
+	_, err := web.shell.Do(req.Context(), &Request{
+		Headers:    Dict{"Name": "LogIn", "Kind": "command"},
+		Parameters: req.Form,
+	})
 	if errors.Is(err, ErrInvalidCredentials) || errors.Is(err, ErrSessionNotFound) || errors.Is(err, ErrPasswordMismatch) {
 		query := url.Values{}
 		query.Set("error", "invalid-credentials")
 		query.Set("username", req.FormValue("username"))
 		http.Redirect(w, req, "/login?"+query.Encode(), http.StatusSeeOther)
 		return
+	}
+	if err != nil {
+		web.logger.Printf("failed to log in: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{

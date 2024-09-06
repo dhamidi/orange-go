@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"log"
@@ -132,11 +133,16 @@ func (web *WebApp) AdminOnly(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		roles, err := web.shell.GetUserRoles(&url.Values{"username": []string{currentUser.Username}})
+		getUserRoles := &Request{
+			Headers:    Dict{"Name": "GetUserRoles", "Kind": "query"},
+			Parameters: &url.Values{"username": []string{currentUser.Username}},
+		}
+		result, err := web.shell.Do(context.Background(), getUserRoles)
+		userRoles := result.([]UserRole)
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
-		if slices.Contains(roles, UserRoleAdmin) {
+		if slices.Contains(userRoles, UserRoleAdmin) {
 			next(w, req)
 		} else {
 			http.Error(w, "Forbidden", http.StatusForbidden)
@@ -176,8 +182,12 @@ func (web *WebApp) PageData(req *http.Request) *pages.PageData {
 	if currentUser != nil {
 		pageData.CurrentUser = &pages.User{Username: currentUser.Username}
 		// fetching roles is on a best-effort basis
-		roles, err := web.shell.GetUserRoles(&url.Values{"username": []string{currentUser.Username}})
-		if err == nil && slices.Contains(roles, UserRoleAdmin) {
+		getUserRoles := &Request{
+			Headers:    Dict{"Name": "GetUserRoles", "Kind": "query"},
+			Parameters: &url.Values{"username": []string{currentUser.Username}},
+		}
+		roles, err := web.shell.Do(req.Context(), getUserRoles)
+		if err == nil && slices.Contains(roles.([]UserRole), UserRoleAdmin) {
 			pageData.IsAdmin = true
 		}
 	}

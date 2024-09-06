@@ -24,7 +24,11 @@ func (web *WebApp) PageResetPassword(w http.ResponseWriter, req *http.Request) {
 			_ = pages.ResetPasswordPage("/reset-password", pageData).Render(w)
 			return
 		}
-		_, err := web.shell.RequestPasswordReset(req.Form)
+		requestPasswordReset := &Request{
+			Headers:    Dict{"Name": "RequestPasswordReset", "Kind": "command"},
+			Parameters: req.Form,
+		}
+		_, err := web.shell.Do(req.Context(), requestPasswordReset)
 		if err != nil && !errors.Is(err, ErrUserNotFound) {
 			web.logger.Printf("error requesting password reset: %s", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)

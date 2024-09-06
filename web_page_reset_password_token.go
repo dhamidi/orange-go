@@ -31,7 +31,11 @@ func (web *WebApp) PageResetPasswordToken(w http.ResponseWriter, req *http.Reque
 			_ = pages.ResetPasswordTokenPage("/reset-password", pageData).Render(w)
 			return
 		}
-		err := web.shell.ResetPassword(req.Form)
+		resetPassword := &Request{
+			Headers:    Dict{"Name": "ResetPassword", "Kind": "command"},
+			Parameters: req.Form,
+		}
+		_, err := web.shell.Do(req.Context(), resetPassword)
 		if err != nil && !errors.Is(err, ErrUserNotFound) {
 			web.logger.Printf("error resetting password: %s", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)

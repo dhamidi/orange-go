@@ -27,7 +27,11 @@ func (web *WebApp) DoComment(w http.ResponseWriter, req *http.Request) {
 	itemID := req.FormValue("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 
-	err := web.shell.Comment(req.Form)
+	comment := &Request{
+		Headers:    Dict{"Name": "Comment", "Kind": "command"},
+		Parameters: req.Form,
+	}
+	_, err := web.shell.Do(req.Context(), comment)
 	if errors.Is(err, ErrSessionNotFound) {
 		web.LogInFirst(w, req)
 		return

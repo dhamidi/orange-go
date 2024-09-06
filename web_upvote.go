@@ -16,7 +16,11 @@ func (web *WebApp) DoUpvote(w http.ResponseWriter, req *http.Request) {
 	itemID := req.Form.Get("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 
-	err := web.shell.Upvote(req.Form)
+	upvote := &Request{
+		Headers:    Dict{"Name": "Upvote", "Kind": "command"},
+		Parameters: req.Form,
+	}
+	_, err := web.shell.Do(req.Context(), upvote)
 	if errors.Is(err, ErrSessionNotFound) {
 		pages.UpvoteButton(itemID).Render(w)
 		return

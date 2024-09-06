@@ -16,7 +16,11 @@ func (web *WebApp) DoHideSubmission(w http.ResponseWriter, req *http.Request) {
 	itemID := req.Form.Get("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 
-	err := web.shell.HideSubmission(req.Form)
+	hideSubmission := &Request{
+		Headers:    Dict{"Name": "HideSubmission", "Kind": "command"},
+		Parameters: req.Form,
+	}
+	_, err := web.shell.Do(req.Context(), hideSubmission)
 	if errors.Is(err, ErrSessionNotFound) {
 		pages.HideSubmissionButton(itemID).Render(w)
 		return

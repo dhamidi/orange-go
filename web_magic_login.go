@@ -13,11 +13,12 @@ func (web *WebApp) PageRequestLoginWithMagic(w http.ResponseWriter, req *http.Re
 		return
 	case "POST":
 		req.ParseForm()
-		email := req.FormValue("email")
-		params := url.Values{}
-		params.Set("email", email)
+		requestLoginWithMagic := &Request{
+			Headers:    Dict{"Name": "RequestLoginWithMagic", "Kind": "command"},
+			Parameters: req.Form,
+		}
 		// ignore errors, as we don't want to leak if an email is registered
-		if _, err := web.shell.RequestMagicLinkLogin(params); err != nil {
+		if _, err := web.shell.Do(req.Context(), requestLoginWithMagic); err != nil {
 			web.logger.Printf("failed to request magic link: %v", err)
 		}
 
@@ -35,7 +36,13 @@ func (web *WebApp) PageLoginWithMagic(w http.ResponseWriter, req *http.Request) 
 	params := url.Values{}
 	params.Set("magic", req.PathValue("magic"))
 
-	sessionID, err := web.shell.LoginWithMagicLink(params)
+	sessionID := web.SessionIDGenerator()
+	params.Set("sessionID", sessionID)
+	logInWithMagic := &Request{
+		Headers:    Dict{"Name": "LogInWithMagic", "Kind": "command"},
+		Parameters: params,
+	}
+	_, err := web.shell.Do(req.Context(), logInWithMagic)
 	if err != nil {
 		pageData := web.PageData(req)
 		pages.ForbiddenMagicPage(req.URL.Path, pageData).Render(w)

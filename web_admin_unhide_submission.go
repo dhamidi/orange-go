@@ -16,7 +16,11 @@ func (web *WebApp) DoUnhideSubmission(w http.ResponseWriter, req *http.Request) 
 	itemID := req.Form.Get("itemID")
 	req.Form.Set("sessionID", sessionID.Value)
 
-	err := web.shell.UnhideSubmission(req.Form)
+	unhideSubmission := &Request{
+		Headers:    Dict{"Name": "UnhideSubmission", "Kind": "command"},
+		Parameters: req.Form,
+	}
+	_, err := web.shell.Do(req.Context(), unhideSubmission)
 	if errors.Is(err, ErrSessionNotFound) {
 		pages.UnhideSubmissionButton(itemID).Render(w)
 		return

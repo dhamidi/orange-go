@@ -38,7 +38,11 @@ func (web *WebApp) handleSubmission(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := web.shell.Submit(req.Form)
+	submit := &Request{
+		Headers:    Dict{"Name": "PostLink", "Kind": "command"},
+		Parameters: req.Form,
+	}
+	_, err := web.shell.Do(req.Context(), submit)
 	if errors.Is(err, ErrEmptyTitle) {
 		form.AddError("title", ErrEmptyTitle.Error())
 	}
