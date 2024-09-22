@@ -68,6 +68,22 @@ type PageData struct {
 	MainOnly    bool
 }
 
+func (p *PageData) Navlinks() []*PageLink {
+	result := []*PageLink{}
+	result = append(result, &PageLink{Path: "/", Name: "Top"})
+	result = append(result, &PageLink{Path: "/submit", Name: "Submit"})
+	if p.CurrentUser == nil {
+		result = append(result, &PageLink{Path: "/login", Name: "Log in"})
+	} else {
+		result = append(result,
+			&PageLink{Path: "/me", Name: p.CurrentUser.Username},
+			&PageLink{Path: "/logout", Name: "Log out"},
+		)
+	}
+
+	return result
+}
+
 func (p *PageData) Username() *string {
 	if p.CurrentUser != nil {
 		return &p.CurrentUser.Username
@@ -164,33 +180,64 @@ func NotificationBar() g.Node {
 }
 
 func Navbar(currentPath string, context *PageData) g.Node {
-	return Nav(Class("bg-orange-500"),
+	return Nav(
+		Class("pb-2"),
+		NavbarLarge(currentPath, context),
+		NavbarSmall(currentPath, context),
+	)
+}
+
+func NavbarSmall(currentPath string, context *PageData) g.Node {
+	return Div(Class("bg-orange-500 flex flex-col h-full w-full lg:hidden"),
+		g.Attr("x-data", "{ navbarOpen: false }"),
+		Div(Class("w-full flex flex-row justify-between"),
+			Span(
+				Class("inline-block text-left w-32 h-16"),
+				Img(Class("inline-block h-16"), Src("/s/android-chrome-192x192.png")),
+			),
+			Div(Class("flex flex-col justify-center cursor-pointer text-white px-2 text-right w-32"),
+				g.Attr("@click", "navbarOpen = !navbarOpen"),
+				g.Text("[MENU]"),
+			),
+		),
+		Div(
+			g.Attr("x-show", "navbarOpen"),
+			Class("h-screen"),
+			g.Group(g.Map(context.Navlinks(), func(link *PageLink) g.Node {
+				return NavbarLinkSmall(link.Path, link.Name, currentPath == link.Path)
+			})),
+		),
+	)
+}
+
+func NavbarLarge(currentPath string, context *PageData) g.Node {
+	return Div(Class("bg-orange-500 hidden lg:block"),
 		Container(
 			Div(Class("flex relative items-center min-h-16"),
 				A(Href("/"), Class("text-white font-bold p-2"), g.Text("The Orange Website")),
-				NavbarLink("/", "Top", currentPath == "/"),
-				NavbarLink("/submit", "Submit", currentPath == "/submit"),
-
-				g.If(context.CurrentUser == nil, NavbarLink("/login", "Log in", currentPath == "/login")),
-				g.Iff(context.CurrentUser != nil,
-					func() g.Node {
-						return g.Group([]g.Node{
-							NavbarLink("/me", context.CurrentUser.Username, currentPath == "/me"),
-							NavbarLink("/logout", "Log out", false),
-						})
-					}),
+				g.Group(g.Map(context.Navlinks(), func(link *PageLink) g.Node {
+					return NavbarLinkLarge(link.Path, link.Name, currentPath == link.Path)
+				})),
 			),
 		),
 	)
 }
 
-// NavbarLink is a link in the Navbar.
-func NavbarLink(path, text string, active bool) g.Node {
+func NavbarLinkLarge(path, text string, active bool) g.Node {
 	return A(Href(path), g.Text(text),
-		// Apply CSS classes conditionally
 		c.Classes{
 			"px-5 py-2 text-sm font-medium focus:outline-none focus:text-white focus:bg-orange-700": true,
 			"text-white bg-orange-700":                        active,
+			"text-white hover:text-white hover:bg-orange-700": !active,
+		},
+	)
+}
+
+func NavbarLinkSmall(path, text string, active bool) g.Node {
+	return A(Href(path), g.Text(text),
+		c.Classes{
+			"px-5 py-2 text-xl font-medium focus:outline-none focus:text-white focus:bg-orange-700 block": true,
+			"text-orange-500 bg-white":                        active,
 			"text-white hover:text-white hover:bg-orange-700": !active,
 		},
 	)
