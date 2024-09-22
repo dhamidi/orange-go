@@ -45,6 +45,7 @@ func (self *InMemoryContentState) refreshFrontpage() {
 		}
 		return cmp.Compare(b, a)
 	})
+
 	self.FrontpageDirty = false
 }
 

@@ -21,6 +21,7 @@ func TimeLabel(t time.Time) g.Node {
 }
 
 type Submission struct {
+	Index          uint64
 	ItemID         string
 	ImageURL       *string
 	Submitter      string
@@ -97,18 +98,15 @@ func IndexPage(path string, submissions []*Submission, context *PageData) g.Node
 }
 
 func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) g.Node {
-	counter := 0
 	return Container(
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
-			counter += 1
 			return Div(
 				Class("flex flex-row space-x-2"),
 				Data("item-id", s.ItemID),
-				Div(Class("prose w-4 text-center"), g.Textf("%d.", counter)),
 				Div(
 					P(
-						A(Href(s.Url), g.Text(s.Title)),
+						A(Href(s.Url), g.Textf("%d. %s", s.Index, s.Title)),
 						Span(Class("text-sm ml-1 break-words text-gray-400"),
 							g.Textf("(%s)", s.Byline())),
 					),
@@ -132,7 +130,7 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) 
 		})),
 		g.Iff(loadMore != nil, func() g.Node {
 			return Div(Class("mt-4"),
-				ButtonLink("More", loadMore.String(), hx.Target("main"), hx.Get(loadMore.String())),
+				ButtonLink("More", loadMore.String(), hx.PushURL("true"), hx.Target("main"), hx.Get(loadMore.String())),
 			)
 		}),
 	)

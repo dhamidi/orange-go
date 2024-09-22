@@ -19,7 +19,7 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	templateData := []*pages.Submission{}
-	for _, submission := range q.Submissions {
+	for i, submission := range q.Submissions {
 		title := ""
 		if submission.Preview != nil {
 			if submission.Preview.Title != nil {
@@ -35,6 +35,7 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 		templateData = append(templateData, &pages.Submission{
+			Index:          uint64(q.After + 1 + i),
 			ItemID:         submission.ItemID,
 			Title:          submission.Title,
 			GeneratedTitle: title,
