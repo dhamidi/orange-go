@@ -660,6 +660,9 @@ func CurrentTimeFromEnv(ctx context.Context) (time.Time, error) {
 // The session is determined by a header called `sessionID`.
 func CurrentSession(shell *Shell, req *Request, ctx context.Context) (context.Context, error) {
 	sessionID := req.Headers.Get("sessionID")
+	if sessionID == "" {
+		sessionID = req.Parameters.Get("sessionID")
+	}
 	q := NewFindSessionQuery(sessionID)
 	if err := shell.App.HandleQuery(q); err != nil {
 		return nil, fmt.Errorf("failed to find session %q: %w\n", sessionID, err)
