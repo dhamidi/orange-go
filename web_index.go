@@ -19,7 +19,8 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	templateData := []*pages.Submission{}
-	for i, submission := range q.Submissions {
+	index := 1 + q.After
+	for _, submission := range q.Submissions {
 		title := ""
 		if submission.Preview != nil {
 			if submission.Preview.Title != nil {
@@ -35,7 +36,7 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 		templateData = append(templateData, &pages.Submission{
-			Index:          uint64(q.After + 1 + i),
+			Index:          uint64(index),
 			ItemID:         submission.ItemID,
 			Title:          submission.Title,
 			GeneratedTitle: title,
@@ -47,6 +48,7 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 			CommentCount:   submission.CommentCount,
 			CanVote:        !submission.ViewerHasVoted,
 		})
+		index++
 	}
 
 	if len(templateData) >= 10 {
