@@ -14,7 +14,7 @@ func (web *WebApp) PageRequestLoginWithMagic(w http.ResponseWriter, req *http.Re
 	case "POST":
 		req.ParseForm()
 		requestLoginWithMagic := &Request{
-			Headers:    Dict{"Name": "RequestLoginWithMagic", "Kind": "command"},
+			Headers:    Dict{"Name": "RequestMagicLinkLogin", "Kind": "command"},
 			Parameters: req.Form,
 		}
 		// ignore errors, as we don't want to leak if an email is registered

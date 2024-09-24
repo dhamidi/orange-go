@@ -56,7 +56,7 @@ func init() {
 	DefaultShellCommands["Signup"] = BuildSignupCommand
 	DefaultShellCommands["LogIn"] = BuildLoginCommand
 	DefaultShellCommands["RequestMagicLinkLogin"] = BuildRequestMagicLinkLoginCommand
-	DefaultShellCommands["LoginWithMagic"] = BuildLoginWithMagicCommand
+	DefaultShellCommands["LogInWithMagic"] = BuildLoginWithMagicCommand
 	DefaultShellCommands["LinkVerifiedEmailToUser"] = BuildLinkVerifiedEmailToUserCommand
 	DefaultShellCommands["SetAdminUsers"] = BuildSetAdminUsersCommand
 	DefaultShellCommands["SetMagicDomains"] = BuildSetMagicDomainsCommand
