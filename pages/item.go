@@ -42,6 +42,7 @@ func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
 			Div(
 				Class("my-2"),
 				g.If(with == WithCommentForm, CommentForm(s.ItemID, NewFormState())),
+				g.If(with == WithoutCommentForm, ButtonLink("Log in to comment", href("/login", q{"back_to": "/item?id=" + s.ItemID}))),
 			),
 		),
 		g.Group(g.Map(s.Comments, func(c Comment) g.Node {
