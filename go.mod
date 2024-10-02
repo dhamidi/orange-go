@@ -20,6 +20,7 @@ require (
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
+	github.com/yuin/goldmark v1.7.4 // indirect
 )
 
 require (
