@@ -27,6 +27,7 @@ func (web *WebApp) handleSubmission(w http.ResponseWriter, req *http.Request) {
 	pageData := web.PageData(req)
 	sessionID, _ := req.Cookie("session_id")
 	req.Form.Set("sessionID", sessionID.Value)
+	req.Form.Set("itemID", web.ItemIDGenerator())
 
 	form := pages.NewFormState()
 	form.SetValue("title", req.Form.Get("title"))

@@ -44,6 +44,7 @@ func (web *WebApp) PageLoginWithMagic(w http.ResponseWriter, req *http.Request) 
 	}
 	_, err := web.shell.Do(req.Context(), logInWithMagic)
 	if err != nil {
+		web.logger.Printf("failed to log in with magic: %s", err)
 		pageData := web.PageData(req)
 		pages.ForbiddenMagicPage(req.URL.Path, pageData).Render(w)
 		return
