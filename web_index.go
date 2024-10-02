@@ -56,6 +56,15 @@ func (web *WebApp) PageIndex(w http.ResponseWriter, req *http.Request) {
 		pageData.LoadMore.RawQuery = (&url.Values{"after": []string{strconv.Itoa(q.After + 10)}}).Encode()
 	}
 
+	pageData.OpenGraph.Title = "The Orange Website"
+	pageData.OpenGraph.Description = "Like HackerNews, but exclusive."
+	pageData.OpenGraph.ImageURL = (&url.URL{
+		Scheme: req.URL.Scheme,
+		Host:   req.URL.Host,
+		Path:   "/s/og.png",
+	}).String()
+	pageData.OpenGraph.Type = "website"
+
 	if isHX(req) {
 		pages.SubmissionList(templateData, pageData.LoadMore, pageData.IsAdmin).Render(w)
 		return

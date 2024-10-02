@@ -69,6 +69,25 @@ type PageData struct {
 	BackTo      *url.URL
 	LoadMore    *url.URL
 	MainOnly    bool
+	OpenGraph   OpenGraph
+}
+
+type OpenGraph struct {
+	Title       string
+	Description string
+	Type        string
+	Url         string
+	ImageURL    string
+}
+
+func (og *OpenGraph) Render() g.Node {
+	return g.Group([]g.Node{
+		g.If(og.Title != "", Meta(g.Attr("property", "og:title"), Content(og.Title))),
+		g.If(og.Description != "", Meta(g.Attr("property", "og:description"), Content(og.Description))),
+		g.If(og.Type != "", Meta(g.Attr("property", "og:type"), Content(og.Type))),
+		g.If(og.Url != "", Meta(g.Attr("property", "og:url"), Content(og.Url))),
+		g.If(og.ImageURL != "", Meta(g.Attr("property", "og:image"), Content(og.ImageURL))),
+	})
 }
 
 func (p *PageData) Navlinks() []*PageLink {
@@ -152,6 +171,7 @@ func Page(title, path string, body g.Node, context *PageData) g.Node {
 			Script(Src("/s/htmx-sse.713ef8d.js")),
 			Script(Src("/s/alpine-3.14.1.min.cd31b85.js"), Defer()),
 			Link(Href("/s/"+context.Stylesheet), Rel("stylesheet")),
+			context.OpenGraph.Render(),
 		},
 		Body: []g.Node{
 			Class("m-0 font-mono flex min-h-screen flex-col"),
