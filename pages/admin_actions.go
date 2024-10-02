@@ -47,3 +47,44 @@ func HideSubmissionButton(itemID string) g.Node {
 		),
 	)
 }
+
+func UnhideCommentButton(itemID string) g.Node {
+	return Form(
+		Class("inline"),
+		hx.Boost("true"),
+		hx.PushURL("false"),
+		hx.Target("this"),
+		Action("/admin/a/unhide-comment"),
+		Method("POST"),
+		Input(
+			Type("hidden"),
+			Name("itemID"),
+			Value(itemID),
+		),
+		Button(
+			Class("inline font-mono font-bold text-red-500"),
+			Type("submit"),
+			g.Text("[unhide]"),
+		),
+	)
+}
+func HideCommentButton(itemID string) g.Node {
+	return Form(
+		Class("inline"),
+		hx.Boost("true"),
+		hx.PushURL("false"),
+		hx.Target("this"),
+		Action("/admin/a/hide-comment"),
+		Method("POST"),
+		Input(
+			Type("hidden"),
+			Name("itemID"),
+			Value(itemID),
+		),
+		Button(
+			Class("inline font-mono font-bold text-red-500"),
+			Type("submit"),
+			g.Text("[hide]"),
+		),
+	)
+}

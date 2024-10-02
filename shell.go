@@ -63,6 +63,8 @@ func init() {
 	DefaultShellCommands["Upvote"] = BuildUpvoteCommand
 	DefaultShellCommands["HideSubmission"] = BuildHideSubmissionCommand
 	DefaultShellCommands["UnhideSubmission"] = BuildUnhideSubmissionCommand
+	DefaultShellCommands["HideComment"] = BuildHideCommentCommand
+	DefaultShellCommands["UnhideComment"] = BuildUnhideCommentCommand
 	DefaultShellCommands["Hide"] = BuildHideCommentCommand
 	DefaultShellCommands["Unhide"] = BuildUnhideCommentCommand
 	DefaultShellCommands["PostLink"] = BuildPostLinkCommand

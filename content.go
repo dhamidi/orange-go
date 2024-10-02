@@ -75,6 +75,8 @@ type Comment struct {
 	Children    []*Comment
 }
 
+func (c *Comment) IsHidden() bool        { return c.Hidden }
+func (c *Comment) CommentID() string     { return c.ID().String() }
 func (c *Comment) CommentableID() string { return c.ID().String() }
 func (c *Comment) WrittenAt() time.Time  { return c.PostedAt }
 func (c *Comment) CommentAuthor() string { return c.Author }

@@ -15,7 +15,7 @@ func ItemPage(path string, submission *Submission, context *PageData) g.Node {
 	if context.CurrentUser != nil {
 		detail = WithCommentForm
 	}
-	return Page("The Orange Website", path, SubmissionDetail(submission, detail), context)
+	return Page("The Orange Website", path, SubmissionDetail(submission, detail, context.IsAdmin), context)
 }
 
 type SubmissionDetailElement string
@@ -25,7 +25,7 @@ const (
 	WithCommentForm    SubmissionDetailElement = "with_comment_form"
 )
 
-func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
+func SubmissionDetail(s *Submission, with SubmissionDetailElement, isAdmin bool) g.Node {
 	return Container(
 		Class("flex flex-col space-y-2"),
 		Div(
@@ -46,7 +46,7 @@ func SubmissionDetail(s *Submission, with SubmissionDetailElement) g.Node {
 			),
 		),
 		g.Group(g.Map(s.Comments, func(c Comment) g.Node {
-			return CommentWithChildren(c)
+			return CommentWithChildren(c, isAdmin)
 		})),
 	)
 }
@@ -77,15 +77,15 @@ func CommentForm(itemID string, state *FormState) g.Node {
 	)
 }
 
-func CommentWithChildren(c Comment) g.Node {
-	comment := CommentBlock(c)
+func CommentWithChildren(c Comment, isAdmin bool) g.Node {
+	comment := CommentBlock(c, isAdmin)
 	if hasChildren, ok := c.(WithChildren); ok {
 		children := []g.Node{}
 		childComments := hasChildren.AllChildren()
 		for i := len(childComments) - 1; i >= 0; i-- {
 			child := childComments[i]
 			if child, ok := child.(Comment); ok {
-				children = append(children, CommentWithChildren(child))
+				children = append(children, CommentWithChildren(child, isAdmin))
 			}
 		}
 		return g.Group(append([]g.Node{comment}, Div(Class("ml-1"), g.Group(children))))
@@ -94,16 +94,28 @@ func CommentWithChildren(c Comment) g.Node {
 	return comment
 }
 
-func CommentBlock(c Comment) g.Node {
+func CommentBlock(c Comment, isAdmin bool) g.Node {
 	commentFormTarget := strings.Replace(fmt.Sprintf("c-%s", c.CommentableID()), "/", "-", -1)
 	return Div(
 		Class("flex flex-col text-xs font-mono border-l-2 mt-1 pl-2 border-orange-700"),
-		P(Class("text-xs"),
+		Div(Class("text-xs"),
 			g.Textf("%s at ", c.CommentAuthor()),
 			TimeLabel(c.WrittenAt()),
 			CommentLink(c.CommentableID(), "#"+commentFormTarget),
+			CommentAdminActions(isAdmin, c),
 		),
 		Div(Class("prose text-xs my-1 prose-stone"), g.Raw(c.CommentContent())),
 		Div(ID(commentFormTarget)),
+	)
+}
+
+func CommentAdminActions(isAdmin bool, c Comment) g.Node {
+	return g.If(
+		isAdmin,
+		g.Group([]g.Node{
+			g.Text(" | "),
+			g.If(c.IsHidden(), UnhideCommentButton(c.CommentID())),
+			g.If(!c.IsHidden(), HideCommentButton(c.CommentID())),
+		}),
 	)
 }

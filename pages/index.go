@@ -45,10 +45,12 @@ func (s *Submission) Byline() string {
 }
 
 type Comment interface {
+	IsHidden() bool
 	CommentAuthor() string
 	CommentContent() string
 	WrittenAt() time.Time
 	CommentableID() string
+	CommentID() string
 }
 
 type WithChildren interface {
