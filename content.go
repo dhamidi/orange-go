@@ -65,13 +65,14 @@ type Vote struct {
 }
 
 type Comment struct {
-	ParentID TreeID
-	Content  string
-	Author   string
-	PostedAt time.Time
-	Hidden   bool
-	Index    int
-	Children []*Comment
+	ParentID    TreeID
+	Content     string
+	ContentHTML string
+	Author      string
+	PostedAt    time.Time
+	Hidden      bool
+	Index       int
+	Children    []*Comment
 }
 
 func (c *Comment) CommentableID() string { return c.ID().String() }
@@ -81,7 +82,16 @@ func (c *Comment) CommentContent() string {
 	if c.Hidden {
 		return "[hidden]"
 	}
-	return c.Content
+	if c.ContentHTML != "" {
+		return c.ContentHTML
+	}
+
+	c.ContentHTML = ConvertContentToHTML(c.Content)
+	if c.ContentHTML == "" {
+		return c.Content
+	}
+
+	return c.ContentHTML
 }
 func (c *Comment) AllChildren() []interface{} {
 	asInterface := make([]interface{}, len(c.Children))

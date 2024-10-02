@@ -103,7 +103,7 @@ func CommentBlock(c Comment) g.Node {
 			TimeLabel(c.WrittenAt()),
 			CommentLink(c.CommentableID(), "#"+commentFormTarget),
 		),
-		P(Class("prose text-xs my-1 prose-stone"), g.Text(c.CommentContent())),
+		Div(Class("prose text-xs my-1 prose-stone"), g.Raw(c.CommentContent())),
 		Div(ID(commentFormTarget)),
 	)
 }
