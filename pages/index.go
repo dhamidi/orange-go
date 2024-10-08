@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"runtime"
+	"strings"
 	"time"
 
 	g "github.com/maragudk/gomponents"
@@ -41,7 +42,7 @@ func (s *Submission) Byline() string {
 		return s.Url
 	}
 
-	return fmt.Sprintf("%s - %s", s.Url, s.GeneratedTitle)
+	return s.GeneratedTitle
 }
 
 type Comment interface {
@@ -122,38 +123,65 @@ func SubmissionList(submissions []*Submission, loadMore *url.URL, isAdmin bool) 
 	return Container(
 		Class("flex flex-col space-y-2"),
 		g.Group(g.Map(submissions, func(s *Submission) g.Node {
-			return Div(
-				Class("flex flex-row space-x-2"),
-				Data("item-id", s.ItemID),
-				Div(
-					P(
-						A(Href(s.Url), g.Textf("%d. %s", s.Index, s.Title)),
-						Span(Class("text-sm ml-1 break-words text-gray-400"),
-							g.Textf("(%s)", s.Byline())),
-					),
-					Div(
-						Class("prose text-xs"),
-						g.Textf("%d points by %s | ", s.VoteCount, s.Submitter),
-						g.If(s.CanVote, UpvoteButton(s.ItemID)),
-						TimeLabel(s.SubmittedAt),
-						g.Text(" | "),
-						A(Href("/item?id="+s.ItemID), g.Textf("%d comments", s.CommentCount)),
-						g.If(
-							isAdmin,
-							g.Group([]g.Node{
-								g.Text(" | "),
-								g.If(s.Hidden, UnhideSubmissionButton(s.ItemID)),
-								g.If(!s.Hidden, HideSubmissionButton(s.ItemID)),
-							}),
-						),
-					),
-				))
+			return SubmissionListItem(s, isAdmin)
 		})),
 		g.Iff(loadMore != nil, func() g.Node {
 			return Div(Class("mt-4"),
 				ButtonLink("More", loadMore.String(), hx.PushURL("true"), hx.Target("main"), hx.Get(loadMore.String())),
 			)
 		}),
+	)
+}
+
+func SubmissionListItem(submission *Submission, isAdmin bool) g.Node {
+	return Div(
+		Data("item-id", submission.ItemID),
+		SubmissionListItemLink(submission),
+		SubmissionListItemFooter(submission, isAdmin),
+	)
+}
+
+func SubmissionListItemLink(s *Submission) g.Node {
+	itemURL, err := url.Parse(s.Url)
+	if err != nil {
+		itemURL = &url.URL{
+			Path: s.Url,
+		}
+	}
+	pathSegments := strings.Split(itemURL.Path, "/")
+	take := 1
+	if len(pathSegments) >= 2 {
+		take = 2
+	}
+	shortURL := fmt.Sprintf("%s%s", itemURL.Host, strings.Join(pathSegments[0:take], "/"))
+
+	return Div(
+		Class("flex flex-col"),
+		A(Href(s.Url), g.Textf("%d. %s", s.Index, s.Title)),
+		Details(
+			Class("text-sm ml-1 break-words text-gray-400 cursor-pointer"),
+			Summary(g.Text(shortURL)),
+			g.Text(s.Byline()),
+		),
+	)
+}
+
+func SubmissionListItemFooter(s *Submission, isAdmin bool) g.Node {
+	return Div(
+		Class("prose max-w-full text-xs"),
+		g.Textf("%d points by %s | ", s.VoteCount, s.Submitter),
+		g.If(s.CanVote, UpvoteButton(s.ItemID)),
+		TimeLabel(s.SubmittedAt),
+		g.Text(" | "),
+		A(Href("/item?id="+s.ItemID), g.Textf("%d comments", s.CommentCount)),
+		g.If(
+			isAdmin,
+			g.Group([]g.Node{
+				g.Text(" | "),
+				g.If(s.Hidden, UnhideSubmissionButton(s.ItemID)),
+				g.If(!s.Hidden, HideSubmissionButton(s.ItemID)),
+			}),
+		),
 	)
 }
 
