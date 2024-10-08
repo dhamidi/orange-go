@@ -50,6 +50,7 @@ type Comment interface {
 	CommentAuthor() string
 	CommentContent() string
 	WrittenAt() time.Time
+	CommentParentID() string
 	CommentableID() string
 	CommentID() string
 }

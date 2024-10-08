@@ -8,7 +8,8 @@ import (
 
 func (web *WebApp) PageItem(w http.ResponseWriter, req *http.Request) {
 	pageData := web.PageData(req)
-	q := NewFindSubmission(req.FormValue("id"))
+	treeID := NewTreeID(req.FormValue("id"))
+	q := NewFindSubmission(treeID.Root())
 	if err := web.app.HandleQuery(q); err != nil {
 		if errors.Is(err, ErrItemNotFound) {
 			http.Error(w, "item not found", http.StatusNotFound)
@@ -18,8 +19,17 @@ func (web *WebApp) PageItem(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	comments := []pages.Comment{}
-	for _, c := range q.Submission.Comments {
-		comments = append(comments, c)
+	if len(treeID) > 1 {
+		comment := q.Submission.Comment(treeID)
+		if comment == nil {
+			http.Error(w, "item not found", http.StatusNotFound)
+			return
+		}
+		comments = []pages.Comment{comment}
+	} else {
+		for _, c := range q.Submission.Comments {
+			comments = append(comments, c)
+		}
 	}
 	templateData := &pages.Submission{
 		ItemID:       q.Submission.ItemID,

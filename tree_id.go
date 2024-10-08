@@ -28,6 +28,13 @@ func (t TreeID) And(any interface{}) TreeID {
 	return TreeID(newID)
 }
 
+func (t TreeID) Root() string {
+	if len(t) > 0 {
+		return t[0]
+	}
+	return ""
+}
+
 func (t TreeID) String() string {
 	return strings.Join(t, "/")
 }

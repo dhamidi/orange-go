@@ -51,6 +51,13 @@ func SubmissionDetail(s *Submission, with SubmissionDetailElement, isAdmin bool)
 	)
 }
 
+func CommentParent(itemID string) g.Node {
+	return A(
+		Href("/item?id="+itemID),
+		Span(Class("text-xs mx-1 font-mono"), g.Text("[parent]")),
+	)
+}
+
 func CommentLink(itemID string, formTarget string) g.Node {
 	return A(
 		hx.Get("/comment?itemID="+itemID),
@@ -99,8 +106,12 @@ func CommentBlock(c Comment, isAdmin bool) g.Node {
 	return Div(
 		Class("flex flex-col text-xs font-mono border-l-2 mt-1 pl-2 border-orange-700"),
 		Div(Class("text-xs"),
-			g.Textf("%s at ", c.CommentAuthor()),
-			TimeLabel(c.WrittenAt()),
+			A(
+				Class("cursor-pointer"),
+				Href(href("/item", q{"id": c.CommentableID()})),
+				g.Textf("%s at ", c.CommentAuthor()),
+				TimeLabel(c.WrittenAt())),
+			CommentParent(c.CommentParentID()),
 			CommentLink(c.CommentableID(), "#"+commentFormTarget),
 			CommentAdminActions(isAdmin, c),
 		),
