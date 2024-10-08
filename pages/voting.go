@@ -8,7 +8,7 @@ import (
 )
 
 func VotedIcon() g.Node {
-	return Span(Class("font-mono"), g.Text("[__]"))
+	return Span(Class("inline mx-1 font-mono"), g.Text("[Voted +1]"))
 }
 func UpvoteButton(itemID string) g.Node {
 	return Form(
@@ -24,9 +24,9 @@ func UpvoteButton(itemID string) g.Node {
 			Value(itemID),
 		),
 		Button(
-			Class("inline font-mono"),
+			Class("inline font-mono mx-1"),
 			Type("submit"),
-			g.Text("[+1]"),
+			g.Text("[Upvote]"),
 		),
 	)
 }
