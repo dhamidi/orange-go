@@ -56,6 +56,10 @@ func NewDefaultSubscriptionSettings(username string, now time.Time) *Subscriptio
 	}
 }
 
+func (s *SubscriptionSettings) HasScope(scope SubscriptionScope) bool {
+	return slices.Contains(s.EnabledFor, scope)
+}
+
 func (s *SubscriptionSettings) Enable(cmd *EnableSubscriptions) {
 	s.Subscriber = cmd.Username
 	s.LastChangeAt = cmd.EnabledAt

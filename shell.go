@@ -83,6 +83,8 @@ func init() {
 	DefaultShellQueries["FindSession"] = BuildFindSessionQuery
 	DefaultShellQueries["MySubscriptionSettings"] = BuildMySubscriptionSettingsQuery
 	DefaultShellQueries["GetFrontpage"] = BuildGetFrontpageQuery
+	DefaultShellQueries["FindSubscribersForNewSubmission"] = BuildFindSubscribersForNewSubmissionQuery
+	DefaultShellQueries["FindSubscribersForNewComment"] = BuildFindSubscribersForNewCommentQuery
 }
 
 func GetAllValues(p Parameters, key string) []string {
@@ -224,6 +226,16 @@ func BuildGetFrontpageQuery(shell *Shell, req *Request, ctx context.Context) (Qu
 		viewer = session.Username
 	}
 	return NewFrontpageQuery(&viewer), nil
+}
+
+func BuildFindSubscribersForNewSubmissionQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	return NewFindSubscribersForNewSubmission(), nil
+}
+
+func BuildFindSubscribersForNewCommentQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	return NewFindSubscribersForNewComment(
+		req.Parameters.Get("itemID"),
+	), nil
 }
 
 func (s *Shell) UnskipCommands(params Parameters) error {

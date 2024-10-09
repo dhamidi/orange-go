@@ -182,6 +182,19 @@ func (self *InMemoryContentState) GetSubmissionForComment(commentID TreeID) (*Su
 	return self.GetSubmission(submissionID)
 }
 
+// GetActiveSubscribers returns the names of all users that have active subscription settings.
+//
+// Subscription settings are considered active if the settings contain at least one active scope.
+func (self *InMemoryContentState) GetActiveSubscribers() ([]string, error) {
+	result := []string{}
+	for username, settings := range self.SubscriptionsByUser {
+		if len(settings.EnabledFor) > 0 {
+			result = append(result, username)
+		}
+	}
+	return result, nil
+}
+
 // GetSubscriptionSettings returns the subscription settings for username.
 //
 // If no settings have been registered prior with `PutSubscriptionSettings`, ErrSubscriptionSettingsNotFound is returned.

@@ -13,6 +13,7 @@ type PlatformConfig struct {
 	ContentStore            *url.URL
 	AuthStore               *url.URL
 	CommandLog              *url.URL
+	Notifier                *url.URL
 	MagicLoginController    *url.URL
 	PasswordResetController *url.URL
 }
@@ -43,6 +44,7 @@ func DefaultPlatformConfig() *PlatformConfig {
 		ContentStore:            parseURL("memory://", "ContentStore"),
 		AuthStore:               parseURL("memory://", "AuthStore"),
 		CommandLog:              parseURL("file:///commands.db", "CommandLog"),
+		Notifier:                parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "Notifier"),
 		MagicLoginController:    parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "MagicLoginController"),
 		PasswordResetController: parseURL("service:///?baseUrl=http:%2f%2flocalhost:8081%2f", "PasswordResetController"),
 	}
@@ -61,6 +63,7 @@ func NewPlatformConfigFromEnv(getenv func(key string) string) *PlatformConfig {
 		"AUTH_STORE":                &config.AuthStore,
 		"COMMAND_LOG":               &config.CommandLog,
 		"EMAIL_SENDER":              &config.EmailSender,
+		"NOTIFIER":                  &config.Notifier,
 		"MAGIC_LOGIN_CONTROLLER":    &config.MagicLoginController,
 		"PASSWORD_RESET_CONTROLLER": &config.PasswordResetController,
 	}
@@ -137,6 +140,22 @@ func (c *PlatformConfig) NewMagicLoginController(app *App) *MagicLoginController
 	panic("Unsupported magic login controller URL " + c.MagicLoginController.String())
 }
 
+func (c *PlatformConfig) NewNotifier(app *App) *Notifier {
+	if c.MagicLoginController.Scheme == "service" {
+		baseURL, err := url.Parse(c.Notifier.Query().Get("baseUrl"))
+		if err != nil {
+			panic("notifier: invalid base url" + err.Error())
+		}
+		return NewNotifier(
+			app,
+			app.Commands,
+			log.New(os.Stdout, "[notifier] ", log.LstdFlags),
+			baseURL,
+		)
+	}
+	panic("Unsupported magic login controller URL " + c.MagicLoginController.String())
+}
+
 func (c *PlatformConfig) NewPasswordResetController(app *App) *PasswordResetController {
 	if c.PasswordResetController.Scheme == "service" {
 		return NewPasswordResetController(
@@ -164,9 +183,11 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 	emailSender := config.NewEmailSender()
 	mailer := NewMailer(emailSender, emailLogger, app)
 
+	notifier := config.NewNotifier(app)
+
 	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
 	previewGenerator := NewPreviewGenerator(app, commandLog, previewLogger)
-	starters := []Starter{previewGenerator, mailer, magicLoginController, passwordResetController}
+	starters := []Starter{previewGenerator, mailer, magicLoginController, passwordResetController, notifier}
 
 	MustSetup(commandLog)
 	MustSetup(auth)

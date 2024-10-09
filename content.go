@@ -16,6 +16,7 @@ type ContentState interface {
 	PutComment(comment *Comment) error
 	GetSubmissionForComment(commentID TreeID) (*Submission, error)
 
+	GetActiveSubscribers() ([]string, error)
 	GetSubscriptionSettings(username string) (*SubscriptionSettings, error)
 	PutSubscriptionSettings(settings *SubscriptionSettings) error
 }
@@ -186,6 +187,10 @@ func (self *Content) HandleQuery(query Query) error {
 		return self.findSubmission(query)
 	case *SubscriptionSettingsForUser:
 		return self.findSubscriptionSettings(query)
+	case *FindSubscribersForNewSubmission:
+		return self.findSubscribersForNewSubmission(query)
+	case *FindSubscribersForNewComment:
+		return self.findSubscribersForNewComment(query)
 	default:
 		return ErrQueryNotAccepted
 	}

@@ -193,6 +193,8 @@ func (self *PersistentContentState) HasVotedFor(user string, itemIDs []string) (
 	return voted, nil
 }
 
+func (self *PersistentContentState) GetActiveSubscribers() ([]string, error) { return []string{}, nil }
+
 func (self *PersistentContentState) GetSubmissionForComment(commentID TreeID) (*Submission, error) {
 	panic("unimplemented")
 }
