@@ -106,6 +106,8 @@ func (self *Auth) HandleCommand(cmd Command) error {
 
 func (self *Auth) HandleQuery(query Query) error {
 	switch query := query.(type) {
+	case *FindUserByName:
+		return self.findUserByName(query)
 	case *FindSession:
 		return self.findSession(query)
 	case *FindUserBySessionID:

@@ -81,6 +81,7 @@ func init() {
 
 	DefaultShellQueries["GetUserRoles"] = BuildGetUserRolesQuery
 	DefaultShellQueries["FindSession"] = BuildFindSessionQuery
+	DefaultShellQueries["FindUserByName"] = BuildFindUserByNameQuery
 	DefaultShellQueries["MySubscriptionSettings"] = BuildMySubscriptionSettingsQuery
 	DefaultShellQueries["GetFrontpage"] = BuildGetFrontpageQuery
 	DefaultShellQueries["FindSubscribersForNewSubmission"] = BuildFindSubscribersForNewSubmissionQuery
@@ -217,6 +218,11 @@ func BuildMySubscriptionSettingsQuery(shell *Shell, req *Request, ctx context.Co
 func BuildFindSessionQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
 	sessionID := req.Parameters.Get("sessionID")
 	return NewFindSessionQuery(sessionID), nil
+}
+
+func BuildFindUserByNameQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	username := req.Parameters.Get("username")
+	return NewFindUserByName(username), nil
 }
 
 func BuildGetFrontpageQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {

@@ -152,20 +152,40 @@ func (n *Notifier) notifyAbout(notification *ScheduledNotification) {
 	id.Add("id", notification.About)
 	actionURL.RawQuery = id.Encode()
 
+	recipientEmail, found := n.findRecipientEmail(notification.Recipient)
+	if !found {
+		return
+	}
+
 	queueEmail := &QueueEmail{
 		InternalID:   notification.ID(),
-		Recipients:   notification.Recipient,
+		Recipients:   recipientEmail,
 		Subject:      "",
 		TemplateName: "content-notification",
 		TemplateData: map[string]any{
 			"about":      notification.About,
 			"trigger":    notification.Event,
+			"name":       notification.Recipient,
 			"title":      title,
 			"action_url": actionURL,
 			"entity":     entity,
 		},
 	}
 	n.App.HandleCommand(queueEmail)
+}
+
+func (n *Notifier) findRecipientEmail(username string) (string, bool) {
+	q := NewFindUserByName(username)
+	if err := n.App.HandleQuery(q); err != nil {
+		n.Logger.Printf("findRecipientEmail: user %q not found: %s", username, err)
+		return "", false
+	}
+
+	if q.User.VerifiedEmail == "" {
+		return "", false
+	}
+
+	return q.User.VerifiedEmail, true
 }
 
 func (n *Notifier) removeScheduleNotificationFor(cmd *QueueEmail) {
