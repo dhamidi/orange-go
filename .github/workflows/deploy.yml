@@ -19,7 +19,7 @@ jobs:
           chmod +x tailwindcss-linux-x86_64
           mv tailwindcss-linux-x86_64 tailwindcss
       - name: build
-        run: ./build.sh
+        run: bash build.sh
       - name: test
         run: go test -v ./...
       - name: upload
