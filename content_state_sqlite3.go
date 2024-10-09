@@ -8,6 +8,19 @@ import (
 
 var _ ContentState = (*PersistentContentState)(nil)
 
+// PersistentContentState is a **sketch** of a persistent version of storing all content.
+//
+// Using a persistent version means we do not need to replay the
+// entire log on application startup, but instead can *remember* our
+// position and resume from there.
+//
+// This particular implementation uses sqlite3 for this purpose.
+//
+// Since storing graph-based data in a SQL database is not straightforward,
+// I eventually gave up, because at this stage it's not necessary.
+//
+// One day I'll return and implement the rest, just to demonstrate
+// that you don't have to keep the entire application state in memory.
 type PersistentContentState struct {
 	filename string
 }
@@ -181,5 +194,13 @@ func (self *PersistentContentState) HasVotedFor(user string, itemIDs []string) (
 }
 
 func (self *PersistentContentState) GetSubmissionForComment(commentID TreeID) (*Submission, error) {
+	panic("unimplemented")
+}
+
+func (self *PersistentContentState) GetSubscriptionSettings(username string) (*SubscriptionSettings, error) {
+	panic("unimplemented")
+}
+
+func (self *PersistentContentState) PutSubscriptionSettings(settings *SubscriptionSettings) error {
 	panic("unimplemented")
 }

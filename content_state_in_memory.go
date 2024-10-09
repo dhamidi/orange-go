@@ -9,12 +9,15 @@ import (
 	"time"
 )
 
+var _ ContentState = (*InMemoryContentState)(nil)
+
 type InMemoryContentState struct {
-	Lock             sync.Mutex
-	FrontpageDirty   bool
-	LastSubmissionAt time.Time
-	Submissions      []*Submission
-	VotesByItemID    map[string][]string
+	Lock                sync.Mutex
+	FrontpageDirty      bool
+	LastSubmissionAt    time.Time
+	Submissions         []*Submission
+	VotesByItemID       map[string][]string
+	SubscriptionsByUser map[string]*SubscriptionSettings
 }
 
 func (self *InMemoryContentState) scoreSubmissions() {
@@ -61,8 +64,9 @@ func (self *InMemoryContentState) PutSubmissionPreview(preview *SubmissionPrevie
 
 func NewInMemoryContentState() *InMemoryContentState {
 	return &InMemoryContentState{
-		Submissions:   make([]*Submission, 0),
-		VotesByItemID: map[string][]string{},
+		Submissions:         make([]*Submission, 0),
+		VotesByItemID:       map[string][]string{},
+		SubscriptionsByUser: map[string]*SubscriptionSettings{},
 	}
 }
 
@@ -176,4 +180,23 @@ func (self *InMemoryContentState) HasVotedFor(user string, itemIDs []string) ([]
 func (self *InMemoryContentState) GetSubmissionForComment(commentID TreeID) (*Submission, error) {
 	submissionID := commentID[0]
 	return self.GetSubmission(submissionID)
+}
+
+// GetSubscriptionSettings returns the subscription settings for username.
+//
+// If no settings have been registered prior with `PutSubscriptionSettings`, ErrSubscriptionSettingsNotFound is returned.
+func (self *InMemoryContentState) GetSubscriptionSettings(username string) (*SubscriptionSettings, error) {
+	settings, found := self.SubscriptionsByUser[username]
+	if !found {
+		return nil, ErrSubscriptionSettingsNotFound
+	}
+	return settings, nil
+}
+
+// PutSubscriptionSettings registers subscription settings for a given user in the system.
+//
+// Settings can later be retrieved using `GetSubscriptionSettings`.
+func (self *InMemoryContentState) PutSubscriptionSettings(settings *SubscriptionSettings) error {
+	self.SubscriptionsByUser[settings.Subscriber] = settings
+	return nil
 }

@@ -155,3 +155,12 @@ Scoring is based on number of upvotes, decaying over time.
 
 Submissions are re-scored every time a new link is submitted or an
 existing one is upvoted.
+
+Users with a verified email address can subscribe to new content in two ways:
+
+* they can subscribe to new submissions being posted,
+* and to new replies on their submissions or comments.
+
+A background goroutine monitors new submissions and 
+when new content is submitted on the website,
+subscribers are notified.

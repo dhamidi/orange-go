@@ -65,6 +65,8 @@ func init() {
 	DefaultShellCommands["UnhideSubmission"] = BuildUnhideSubmissionCommand
 	DefaultShellCommands["HideComment"] = BuildHideCommentCommand
 	DefaultShellCommands["UnhideComment"] = BuildUnhideCommentCommand
+	DefaultShellCommands["EnableSubscriptions"] = BuildEnableSubscriptionsCommand
+	DefaultShellCommands["DisableSubscriptions"] = BuildDisableSubscriptionsCommand
 	DefaultShellCommands["Hide"] = BuildHideCommentCommand
 	DefaultShellCommands["Unhide"] = BuildUnhideCommentCommand
 	DefaultShellCommands["PostLink"] = BuildPostLinkCommand
@@ -79,6 +81,7 @@ func init() {
 
 	DefaultShellQueries["GetUserRoles"] = BuildGetUserRolesQuery
 	DefaultShellQueries["FindSession"] = BuildFindSessionQuery
+	DefaultShellQueries["MySubscriptionSettings"] = BuildMySubscriptionSettingsQuery
 	DefaultShellQueries["GetFrontpage"] = BuildGetFrontpageQuery
 }
 
@@ -197,6 +200,16 @@ func BuildSetMagicDomainsCommand(shell *Shell, req *Request, ctx context.Context
 func BuildGetUserRolesQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
 	username := req.Parameters.Get("username")
 	return NewGetUserRolesQuery(username), nil
+}
+
+func BuildMySubscriptionSettingsQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
+	env := NewRequestEnv(ctx)
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	username := session.Username
+	return NewMySubscriptionSettings(username), nil
 }
 
 func BuildFindSessionQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {
@@ -353,6 +366,44 @@ func BuildUnhideSubmissionCommand(shell *Shell, req *Request, ctx context.Contex
 		ItemID:     req.Parameters.Get("itemID"),
 		UnhiddenBy: session.Username,
 		UnhiddenAt: unhiddenAt,
+	}, nil
+}
+
+func BuildEnableSubscriptionsCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	enabledAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("enable-subscriptions: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	scopes := GetAllValues(req.Parameters, "scope")
+
+	return &EnableSubscriptions{
+		Scopes:    scopes,
+		Username:  session.Username,
+		EnabledAt: enabledAt,
+	}, nil
+}
+
+func BuildDisableSubscriptionsCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	disabledAt, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("disable-subscriptions: %w", err)
+	}
+	session := env.CurrentSession()
+	if session == nil {
+		return nil, ErrSessionNotFound
+	}
+	scopes := GetAllValues(req.Parameters, "scope")
+
+	return &DisableSubscriptions{
+		Scopes:     scopes,
+		Username:   session.Username,
+		DisabledAt: disabledAt,
 	}, nil
 }
 

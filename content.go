@@ -15,6 +15,9 @@ type ContentState interface {
 	HasVotedFor(user string, itemIDs []string) ([]bool, error)
 	PutComment(comment *Comment) error
 	GetSubmissionForComment(commentID TreeID) (*Submission, error)
+
+	GetSubscriptionSettings(username string) (*SubscriptionSettings, error)
+	PutSubscriptionSettings(settings *SubscriptionSettings) error
 }
 
 type Submission struct {
@@ -159,6 +162,10 @@ func (self *Content) HandleCommand(cmd Command) error {
 		return self.handleHideComment(cmd)
 	case *UnhideComment:
 		return self.handleUnhideComment(cmd)
+	case *EnableSubscriptions:
+		return self.handleEnableSubscriptions(cmd)
+	case *DisableSubscriptions:
+		return self.handleDisableSubscriptions(cmd)
 	}
 	return ErrCommandNotAccepted
 }
@@ -177,6 +184,8 @@ func (self *Content) HandleQuery(query Query) error {
 		return self.getFrontpageSubmissions(query)
 	case *FindSubmission:
 		return self.findSubmission(query)
+	case *MySubscriptionSettings:
+		return self.findSubscriptionSettings(query)
 	default:
 		return ErrQueryNotAccepted
 	}
