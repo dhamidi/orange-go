@@ -1,19 +1,19 @@
 package main
 
-type MySubscriptionSettings struct {
+type SubscriptionSettingsForUser struct {
 	Username string
 
 	Settings *SubscriptionSettings
 }
 
-func (q *MySubscriptionSettings) QueryName() string { return "MySubscriptionSettings" }
-func (q *MySubscriptionSettings) Result() any       { return q.Settings }
+func (q *SubscriptionSettingsForUser) QueryName() string { return "MySubscriptionSettings" }
+func (q *SubscriptionSettingsForUser) Result() any       { return q.Settings }
 
-func NewMySubscriptionSettings(username string) *MySubscriptionSettings {
-	return &MySubscriptionSettings{Username: username}
+func NewMySubscriptionSettings(username string) *SubscriptionSettingsForUser {
+	return &SubscriptionSettingsForUser{Username: username}
 }
 
-func (self *Content) findSubscriptionSettings(q *MySubscriptionSettings) error {
+func (self *Content) findSubscriptionSettings(q *SubscriptionSettingsForUser) error {
 	settings, err := self.state.GetSubscriptionSettings(q.Username)
 	if err != nil {
 		return err

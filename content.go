@@ -184,7 +184,7 @@ func (self *Content) HandleQuery(query Query) error {
 		return self.getFrontpageSubmissions(query)
 	case *FindSubmission:
 		return self.findSubmission(query)
-	case *MySubscriptionSettings:
+	case *SubscriptionSettingsForUser:
 		return self.findSubscriptionSettings(query)
 	default:
 		return ErrQueryNotAccepted
