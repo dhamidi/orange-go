@@ -19,6 +19,16 @@ type TestContext struct {
 	Viewer    string
 }
 
+func (t *TestContext) Notifier() *Notifier {
+	for _, s := range t.Starters {
+		notifier, ok := s.(*Notifier)
+		if ok {
+			return notifier
+		}
+	}
+	return nil
+}
+
 func (t *TestContext) upvote(itemID, as string) Command {
 	return &UpvoteSubmission{
 		ItemID:  itemID,
@@ -197,6 +207,14 @@ func (t *TestContext) unhideSubmission(id string) Command {
 	}
 }
 
+func (t *TestContext) subscribeTo(username string, scope SubscriptionScope) Command {
+	return &EnableSubscriptions{
+		Username:  username,
+		EnabledAt: time.Now(),
+		Scopes:    []string{scope},
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }
@@ -217,6 +235,19 @@ func (t *TestContext) mustFailWith(cmd Command, expected error) {
 	if !errors.Is(err, expected) {
 		t.t.Fatalf("expected %s, got %s", expected, err)
 	}
+}
+
+func (t *TestContext) LogContains(f func(*PersistedCommand) bool) bool {
+	commands, err := t.App.Commands.After(0)
+	if err != nil {
+		t.t.Fatalf("Failed to read log: %s", err)
+	}
+	for command := range commands {
+		if f(command) {
+			return true
+		}
+	}
+	return false
 }
 
 func setup(t *testing.T) *TestContext {
@@ -240,4 +271,14 @@ func mustFind[E any](collection []E, field string, value interface{}) E {
 	}
 
 	panic(fmt.Sprintf("failed to find %s with %s=%v", reflect.TypeOf(collection).Elem().String(), field, value))
+}
+
+func (t *TestContext) DumpLog() {
+	commands, err := t.App.Commands.After(0)
+	if err != nil {
+		t.t.Fatalf("DumpLog: %s", err)
+	}
+	for command := range commands {
+		t.t.Logf("% 3d %s %#v", command.ID, command.Message.CommandName(), command.Message)
+	}
 }

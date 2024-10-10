@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -73,7 +74,7 @@ func (n *Notifier) Start() func() {
 }
 
 func (n *Notifier) catchUp() {
-	commands, err := n.Commands.After(0)
+	commands, err := n.Commands.After(n.Version)
 	if err != nil {
 		n.Logger.Printf("failed to fetch commands: %v", err)
 		return
@@ -106,7 +107,7 @@ func (n *Notifier) showWork() {
 	}
 
 	for _, notification := range n.ToNotify {
-		n.Logger.Printf("%q about %q(%q)", notification.Recipient, notification.Event, notification.Event)
+		n.Logger.Printf("%q about %q(%q)", notification.Recipient, notification.Event, notification.About)
 	}
 }
 
@@ -154,6 +155,7 @@ func (n *Notifier) notifyAbout(notification *ScheduledNotification) {
 
 	recipientEmail, found := n.findRecipientEmail(notification.Recipient)
 	if !found {
+		n.Logger.Printf("skipping %q, no verified email found", notification.Recipient)
 		return
 	}
 
@@ -167,7 +169,7 @@ func (n *Notifier) notifyAbout(notification *ScheduledNotification) {
 			"trigger":    notification.Event,
 			"name":       notification.Recipient,
 			"title":      title,
-			"action_url": actionURL,
+			"action_url": actionURL.String(),
 			"entity":     entity,
 		},
 	}
@@ -189,40 +191,28 @@ func (n *Notifier) findRecipientEmail(username string) (string, bool) {
 }
 
 func (n *Notifier) removeScheduleNotificationFor(cmd *QueueEmail) {
-	aboutAny, found := cmd.TemplateData["about"]
-	if !found {
-		return
-	}
-
 	if cmd.TemplateName != "content-notification" {
 		return
 	}
-
-	about, ok := aboutAny.(string)
-	if !ok {
-		n.Logger.Printf("removeScheduleNotificationFor: expected string, got %#v", aboutAny)
-		return
-	}
-
-	triggerAny, found := cmd.TemplateData["trigger"]
-	if !found {
-		n.Logger.Printf("removeScheduleNotificationFor: expected trigger, found none")
-		return
-	}
-	trigger, ok := triggerAny.(string)
-	if !ok {
-		n.Logger.Printf("removeScheduleNotificationFor: expected trigger to be string, got %#v", triggerAny)
+	entityIDAndRecipient := strings.Split(cmd.InternalID, ":")
+	about, recipient := entityIDAndRecipient[0], entityIDAndRecipient[1]
+	trigger := "unknown"
+	if t, found := cmd.TemplateData["trigger"]; found {
+		if ts, ok := t.(string); ok {
+			trigger = ts
+		}
 	}
 	notification := &ScheduledNotification{
 		About:     about,
 		Event:     trigger,
-		Recipient: cmd.Recipients,
+		Recipient: recipient,
 	}
 
 	n.ToNotify.Remove(notification)
 }
 func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 	for _, recipient := range n.recipientsFor(cmd) {
+		n.Logger.Printf("scheduling for %q", recipient)
 		n.ToNotify.Add(&ScheduledNotification{
 			About:     cmd.ItemID,
 			Event:     "PostLink",
@@ -232,6 +222,7 @@ func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 }
 func (n *Notifier) addScheduledNotificationForComment(cmd *PostComment) {
 	for _, recipient := range n.recipientsFor(cmd) {
+		n.Logger.Printf("scheduling for %q", recipient)
 		n.ToNotify.Add(&ScheduledNotification{
 			About:     cmd.ParentID.String(),
 			Event:     "PostComment",

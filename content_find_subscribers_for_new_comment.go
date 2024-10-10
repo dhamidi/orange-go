@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type FindSubscribersForNewComment struct {
 	ParentID    TreeID
@@ -39,8 +42,14 @@ func (self *Content) findSubscribersForNewComment(q *FindSubscribersForNewCommen
 	for _, comment := range submission.Comments {
 		walk(comment)
 	}
+	activeSubscribers, err := self.state.GetActiveSubscribers()
+	if err != nil {
+		return fmt.Errorf("FindSubscribersForNewComment: failed to get active subscribers: %w", err)
+	}
 	for username := range result {
-		q.Subscribers = append(q.Subscribers, username)
+		if slices.Contains(activeSubscribers, username) {
+			q.Subscribers = append(q.Subscribers, username)
+		}
 	}
 	return nil
 }
