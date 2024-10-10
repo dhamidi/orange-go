@@ -9,7 +9,7 @@ type SubscriptionSettingsForUser struct {
 func (q *SubscriptionSettingsForUser) QueryName() string { return "MySubscriptionSettings" }
 func (q *SubscriptionSettingsForUser) Result() any       { return q.Settings }
 
-func NewMySubscriptionSettings(username string) *SubscriptionSettingsForUser {
+func NewSubscriptionSettingsForUserQuery(username string) *SubscriptionSettingsForUser {
 	return &SubscriptionSettingsForUser{Username: username}
 }
 

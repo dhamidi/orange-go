@@ -212,7 +212,7 @@ func BuildMySubscriptionSettingsQuery(shell *Shell, req *Request, ctx context.Co
 		return nil, ErrSessionNotFound
 	}
 	username := session.Username
-	return NewMySubscriptionSettings(username), nil
+	return NewSubscriptionSettingsForUserQuery(username), nil
 }
 
 func BuildFindSessionQuery(shell *Shell, req *Request, ctx context.Context) (Query, error) {

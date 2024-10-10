@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -159,6 +160,26 @@ func (n *Notifier) notifyAbout(notification *ScheduledNotification) {
 		return
 	}
 
+	getSettings := NewSubscriptionSettingsForUserQuery(notification.Recipient)
+	settingsError := n.App.HandleQuery(getSettings)
+	if errors.Is(settingsError, ErrSubscriptionSettingsNotFound) {
+		return
+	}
+	if settingsError != nil {
+		n.Logger.Printf("error retrieving notification settings for user %q: %s", notification.Recipient, settingsError)
+		return
+	}
+
+	subscriptions := getSettings.Settings
+	if notification.About == "PostLink" && !subscriptions.HasScope(SUBSCRIPTION_SCOPE_SUBMISSIONS) {
+		return
+	}
+
+	if notification.About == "PostComment" && !subscriptions.HasScope(SUBSCRIPTION_SCOPE_REPLIES) {
+		return
+	}
+
+	n.Logger.Printf("notifying %q about %q", notification.Recipient, notification.Event)
 	queueEmail := &QueueEmail{
 		InternalID:   notification.ID(),
 		Recipients:   recipientEmail,
@@ -212,7 +233,6 @@ func (n *Notifier) removeScheduleNotificationFor(cmd *QueueEmail) {
 }
 func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 	for _, recipient := range n.recipientsFor(cmd) {
-		n.Logger.Printf("scheduling for %q", recipient)
 		n.ToNotify.Add(&ScheduledNotification{
 			About:     cmd.ItemID,
 			Event:     "PostLink",
@@ -222,7 +242,6 @@ func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 }
 func (n *Notifier) addScheduledNotificationForComment(cmd *PostComment) {
 	for _, recipient := range n.recipientsFor(cmd) {
-		n.Logger.Printf("scheduling for %q", recipient)
 		n.ToNotify.Add(&ScheduledNotification{
 			About:     cmd.ParentID.String(),
 			Event:     "PostComment",
