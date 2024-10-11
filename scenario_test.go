@@ -215,6 +215,13 @@ func (t *TestContext) subscribeTo(username string, scope SubscriptionScope) Comm
 	}
 }
 
+func (t *TestContext) enableNotifier() Command {
+	return &SetNotifierConfig{
+		ChangedAt: time.Now(),
+		Enabled:   true,
+	}
+}
+
 func (t *TestContext) do(cmd Command) error {
 	return t.App.HandleCommand(cmd)
 }

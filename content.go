@@ -167,6 +167,8 @@ func (self *Content) HandleCommand(cmd Command) error {
 		return self.handleEnableSubscriptions(cmd)
 	case *DisableSubscriptions:
 		return self.handleDisableSubscriptions(cmd)
+	case *SetNotifierConfig:
+		return self.handleSetNotifierConfig(cmd)
 	}
 	return ErrCommandNotAccepted
 }

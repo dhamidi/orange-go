@@ -79,6 +79,8 @@ func init() {
 	DefaultShellCommands["QueueEmail"] = BuildQueueEmailCommand
 	DefaultShellCommands["SendWelcomeEmail"] = BuildSendWelcomeEmailCommand
 
+	DefaultShellCommands["SetNotifierConfig"] = BuildSetNotifierConfigCommand
+
 	DefaultShellQueries["GetUserRoles"] = BuildGetUserRolesQuery
 	DefaultShellQueries["FindSession"] = BuildFindSessionQuery
 	DefaultShellQueries["FindUserByName"] = BuildFindUserByNameQuery
@@ -558,6 +560,29 @@ func BuildChangeUsernamePolicyCommand(shell *Shell, req *Request, ctx context.Co
 		MinLength: minLength,
 		MaxLength: maxLength,
 		Blacklist: blacklist,
+	}, nil
+}
+
+func BuildSetNotifierConfigCommand(shell *Shell, req *Request, ctx context.Context) (Command, error) {
+	env := NewRequestEnv(ctx)
+	now, err := env.CurrentTime()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get current time: %w", err)
+	}
+
+	enabled := false
+	switch req.Parameters.Get("enabled") {
+	case "true", "yes":
+		enabled = true
+	case "false", "no":
+		enabled = false
+	default:
+		return nil, fmt.Errorf("unknown value for enabled: %s", req.Parameters.Get("enabled"))
+	}
+
+	return &SetNotifierConfig{
+		ChangedAt: now,
+		Enabled:   enabled,
 	}, nil
 }
 

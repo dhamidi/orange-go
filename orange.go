@@ -153,7 +153,7 @@ func (c *PlatformConfig) NewNotifier(app *App) *Notifier {
 			baseURL,
 		)
 	}
-	panic("Unsupported magic login controller URL " + c.MagicLoginController.String())
+	panic("Unsupported notifier URL " + c.MagicLoginController.String())
 }
 
 func (c *PlatformConfig) NewPasswordResetController(app *App) *PasswordResetController {
@@ -187,7 +187,13 @@ func HackerNews(config *PlatformConfig) (*App, []Starter) {
 
 	previewLogger := log.New(os.Stdout, "[preview] ", log.LstdFlags)
 	previewGenerator := NewPreviewGenerator(app, commandLog, previewLogger)
-	starters := []Starter{previewGenerator, mailer, magicLoginController, passwordResetController, notifier}
+	starters := []Starter{
+		previewGenerator,
+		mailer,
+		magicLoginController,
+		passwordResetController,
+		notifier,
+	}
 
 	MustSetup(commandLog)
 	MustSetup(auth)

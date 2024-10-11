@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 )
@@ -22,6 +23,7 @@ type Notifier struct {
 	ToNotify ScheduledNotificationSet
 	Version  int
 	BaseURL  *url.URL
+	Active   bool
 }
 
 type ScheduledNotificationSet map[string]*ScheduledNotification
@@ -63,6 +65,7 @@ func NewNotifier(app *App, commands CommandLog, logger *log.Logger, baseURL *url
 		ToNotify: make(ScheduledNotificationSet),
 		Version:  0,
 		BaseURL:  baseURL,
+		Active:   false,
 	}
 }
 func (n *Notifier) Start() func() {
@@ -120,6 +123,8 @@ func (n *Notifier) HandleCommand(cmd Command) {
 		n.addScheduledNotificationForSubmission(cmd)
 	case *PostComment:
 		n.addScheduledNotificationForComment(cmd)
+	case *SetNotifierConfig:
+		n.Active = cmd.Enabled
 	}
 }
 
@@ -231,9 +236,17 @@ func (n *Notifier) removeScheduleNotificationFor(cmd *QueueEmail) {
 
 	n.ToNotify.Remove(notification)
 }
+
+func (n *Notifier) schedule(not *ScheduledNotification) {
+	if n.Active == false {
+		return
+	}
+	n.ToNotify.Add(not)
+}
+
 func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 	for _, recipient := range n.recipientsFor(cmd) {
-		n.ToNotify.Add(&ScheduledNotification{
+		n.schedule(&ScheduledNotification{
 			About:     cmd.ItemID,
 			Event:     "PostLink",
 			Recipient: recipient,
@@ -242,7 +255,7 @@ func (n *Notifier) addScheduledNotificationForSubmission(cmd *PostLink) {
 }
 func (n *Notifier) addScheduledNotificationForComment(cmd *PostComment) {
 	for _, recipient := range n.recipientsFor(cmd) {
-		n.ToNotify.Add(&ScheduledNotification{
+		n.schedule(&ScheduledNotification{
 			About:     cmd.ParentID.String(),
 			Event:     "PostComment",
 			Recipient: recipient,
@@ -255,11 +268,15 @@ func (n *Notifier) recipientsFor(cmd Command) []string {
 	case *PostLink:
 		q := NewFindSubscribersForNewSubmission()
 		n.App.HandleQuery(q)
-		return q.Result().([]string)
+		return slices.DeleteFunc(q.Subscribers, func(subscriber string) bool {
+			return subscriber == cmd.Submitter
+		})
 	case *PostComment:
 		q := NewFindSubscribersForNewComment(cmd.ParentID.String())
 		n.App.HandleQuery(q)
-		return q.Result().([]string)
+		return slices.DeleteFunc(q.Subscribers, func(subscriber string) bool {
+			return subscriber == cmd.Author
+		})
 	default:
 		return []string{}
 	}
